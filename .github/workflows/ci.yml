@@ -84,9 +84,17 @@ jobs:
           if (-not (Test-Path $dll)) { throw "native library was not produced" }
           $dumpbin = Get-ChildItem "C:\Program Files*\Microsoft Visual Studio\*\*\VC\Tools\MSVC\*\bin\Hostx64\x64\dumpbin.exe" |
                      Select-Object -First 1
-          $exports = & $dumpbin.FullName /exports $dll
-          if ($exports -notmatch "EXTFH") { throw "EXTFH is not exported" }
-          Write-Host "EXTFH exported from $dll"
+          # Join before matching: against an array, -notmatch returns the
+          # non-matching elements rather than a boolean, so it is truthy
+          # whenever any single line lacks the text.
+          $exports = (& $dumpbin.FullName /exports $dll) -join "`n"
+
+          foreach ($symbol in @('EXTFH', 'EXTFH_SHUTDOWN')) {
+            if ($exports -notmatch [regex]::Escape($symbol)) {
+              throw "$symbol is not exported from $dll"
+            }
+            Write-Host "$symbol exported"
+          }
 
       - name: Upload packages
         uses: actions/upload-artifact@v4

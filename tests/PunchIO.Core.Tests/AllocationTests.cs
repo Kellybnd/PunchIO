@@ -5,12 +5,27 @@ using Xunit;
 namespace PunchIO.Core.Tests;
 
 /// <summary>
-/// The zero-allocation claim, asserted rather than measured in a benchmark
-/// report nobody re-runs. Steady state means after the pump's slab and the
-/// reader's stitch buffer exist; those are per-file, not per-record.
+/// Asserts that reading and writing do not allocate per record.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Measured as a marginal cost: the same operation is run over N records and
+/// over 2N, and the difference is divided by N. Opening a file allocates a
+/// buffer slab of <c>BlockSize × (QueueDepth + 1)</c>, several megabytes at the
+/// defaults, and that cost is identical in both runs so it cancels out.
+/// </para>
+/// <para>
+/// Dividing a single run's total by its record count does not work. The slab
+/// dominates, it is charged to the garbage collector only on backends that use
+/// managed memory, and the resulting figure varies by platform while telling you
+/// nothing about per-record behaviour.
+/// </para>
+/// </remarks>
 public sealed class AllocationTests : IDisposable
 {
+    private const int Baseline = 50_000;
+    private const int Extra = 50_000;
+
     private readonly string _directory =
         Path.Combine(Path.GetTempPath(), $"punchio-alloc-{Guid.NewGuid():N}");
 
@@ -37,42 +52,40 @@ public sealed class AllocationTests : IDisposable
     private string NewPath() => Path.Combine(_directory, $"{Guid.NewGuid():N}.dat");
 
     /// <summary>
-    /// Asserts bytes allocated per record, which is the figure the documentation
-    /// quotes. A total-byte ceiling generous enough to absorb per-file setup is
-    /// also generous enough to hide a small per-record regression.
+    /// Bytes allocated per record, isolated from the fixed cost of opening a file.
     /// </summary>
-    private static void AssertPerRecord(long allocated, int records, double ceiling, string what)
+    /// <param name="run">Runs the operation over the given number of records.</param>
+    /// <returns>The marginal allocation per record, in bytes.</returns>
+    private static async Task<double> MeasurePerRecordAsync(Func<int, Task> run)
     {
-        double perRecord = allocated / (double)records;
+        // Warm up so first-call costs are not attributed to either measurement.
+        await run(Baseline);
 
-        Assert.True(
-            perRecord < ceiling,
-            $"{what} allocated {perRecord:N2} bytes per record " +
-            $"({allocated:N0} across {records:N0}), ceiling {ceiling:N2}");
+        long small = await MeasureAsync(() => run(Baseline));
+        long large = await MeasureAsync(() => run(Baseline + Extra));
+
+        return (large - small) / (double)Extra;
     }
 
-    /// <summary>
-    /// Bytes allocated on this thread while draining <paramref name="records"/>
-    /// records, after a warm-up pass that settles the buffers.
-    /// </summary>
-    private static async Task<long> MeasureDrainAsync(Func<Task> warmUp, Func<Task<long>> drain)
+    private static async Task<long> MeasureAsync(Func<Task> action)
     {
-        await warmUp();
-
-        // Settle anything the warm-up left pending so it is not attributed below.
         GC.Collect();
         GC.WaitForPendingFinalizers();
         GC.Collect();
 
-        // Process-wide, not per-thread: an async continuation can resume on any
-        // pool thread, and a per-thread counter would simply lose those bytes.
+        // Process-wide and precise: async continuations resume on arbitrary pool
+        // threads, so a per-thread counter would simply lose them.
         long before = GC.GetTotalAllocatedBytes(precise: true);
-        long records = await drain();
-        long after = GC.GetTotalAllocatedBytes(precise: true);
+        await action();
 
-        Assert.True(records > 0, "the drain read no records");
+        return GC.GetTotalAllocatedBytes(precise: true) - before;
+    }
 
-        return after - before;
+    private static void AssertPerRecord(double perRecord, double ceiling, string what)
+    {
+        Assert.True(
+            perRecord < ceiling,
+            $"{what} allocated {perRecord:N2} bytes per record, ceiling {ceiling:N2}");
     }
 
     [Fact]
@@ -80,50 +93,29 @@ public sealed class AllocationTests : IDisposable
     {
         RequireReleaseBuild();
 
-        // Hoisted: TestContext.Current is an AsyncLocal lookup, and resolving
-        // it inside a 50,000-iteration loop measures the harness, not the library.
         var ct = Ct;
-
-        var path = NewPath();
+        var record = new byte[80];
+        string path = NewPath();
 
         await using (var writer = RecordFile.CreateVariableWrite(
             path, VariableRecordDescriptor.Fujitsu))
         {
-            for (int i = 0; i < 50_000; i++)
-                await writer.WriteAsync(new byte[80], ct);
+            for (int i = 0; i < Baseline + Extra; i++)
+                await writer.WriteAsync(record, ct);
         }
 
-        long allocated = await MeasureDrainAsync(
-            warmUp: async () =>
-            {
-                await using var reader = RecordFile.OpenVariableRead(
-                    path, VariableRecordDescriptor.Fujitsu);
+        double perRecord = await MeasurePerRecordAsync(async count =>
+        {
+            await using var reader = RecordFile.OpenVariableRead(
+                path, VariableRecordDescriptor.Fujitsu);
 
-                while (await reader.MoveNextAsync(ct)) { }
-            },
-            drain: async () =>
-            {
-                await using var reader = RecordFile.OpenVariableRead(
-                    path, VariableRecordDescriptor.Fujitsu);
+            long read = 0;
+            while (read < count && await reader.MoveNextAsync(ct)) read++;
 
-                long count = 0;
-                long checksum = 0;
+            Assert.Equal(count, read);
+        });
 
-                while (await reader.MoveNextAsync(ct))
-                {
-                    count++;
-                    checksum += reader.Current.Length;
-                }
-
-                Assert.Equal(50_000 * 80, checksum);
-                return count;
-            });
-
-        // Measured at 1.47 bytes per record: the stitch buffer growing at block
-        // boundaries, which is per-file rather than per-record. The ceiling is
-        // set close enough to catch a regression that reintroduced genuine
-        // per-record allocation, which is what the documentation claims.
-        AssertPerRecord(allocated, records: 50_000, ceiling: 3.0, "reading variable records");
+        AssertPerRecord(perRecord, ceiling: 1.0, "reading variable records");
     }
 
     [Fact]
@@ -131,39 +123,27 @@ public sealed class AllocationTests : IDisposable
     {
         RequireReleaseBuild();
 
-        // Hoisted: TestContext.Current is an AsyncLocal lookup, and resolving
-        // it inside a 50,000-iteration loop measures the harness, not the library.
         var ct = Ct;
-
-        var path = NewPath();
         var record = Encoding.ASCII.GetBytes(new string('X', 80));
+        string path = NewPath();
 
         await using (var writer = RecordFile.CreateFixedBlockWrite(path, recordLength: 80))
         {
-            for (int i = 0; i < 50_000; i++)
+            for (int i = 0; i < Baseline + Extra; i++)
                 await writer.WriteAsync(record, ct);
         }
 
-        long allocated = await MeasureDrainAsync(
-            warmUp: async () =>
-            {
-                await using var reader = RecordFile.OpenFixedBlockRead(path, 80);
-                while (await reader.MoveNextAsync(ct)) { }
-            },
-            drain: async () =>
-            {
-                await using var reader = RecordFile.OpenFixedBlockRead(path, 80);
+        double perRecord = await MeasurePerRecordAsync(async count =>
+        {
+            await using var reader = RecordFile.OpenFixedBlockRead(path, 80);
 
-                long count = 0;
-                while (await reader.MoveNextAsync(ct)) count++;
+            long read = 0;
+            while (read < count && await reader.MoveNextAsync(ct)) read++;
 
-                return count;
-            });
+            Assert.Equal(count, read);
+        });
 
-        // Measured at 0.06 bytes per record. Fixed block is the cleanest path
-        // because ResolveBlockSize picks a multiple of the record length, so
-        // records never straddle and no stitch buffer is ever needed.
-        AssertPerRecord(allocated, records: 50_000, ceiling: 0.5, "reading fixed records");
+        AssertPerRecord(perRecord, ceiling: 1.0, "reading fixed records");
     }
 
     [Fact]
@@ -171,36 +151,19 @@ public sealed class AllocationTests : IDisposable
     {
         RequireReleaseBuild();
 
-        // Hoisted: TestContext.Current is an AsyncLocal lookup, and resolving
-        // it inside a 50,000-iteration loop measures the harness, not the library.
         var ct = Ct;
-
         var record = new byte[80];
 
-        long allocated = await MeasureDrainAsync(
-            warmUp: async () =>
-            {
-                await using var writer = RecordFile.CreateVariableWrite(
-                    NewPath(), VariableRecordDescriptor.Fujitsu);
+        double perRecord = await MeasurePerRecordAsync(async count =>
+        {
+            await using var writer = RecordFile.CreateVariableWrite(
+                NewPath(), VariableRecordDescriptor.Fujitsu);
 
-                for (int i = 0; i < 50_000; i++)
-                    await writer.WriteAsync(record, ct);
-            },
-            drain: async () =>
-            {
-                await using var writer = RecordFile.CreateVariableWrite(
-                    NewPath(), VariableRecordDescriptor.Fujitsu);
+            for (int i = 0; i < count; i++)
+                await writer.WriteAsync(record, ct);
+        });
 
-                for (int i = 0; i < 50_000; i++)
-                    await writer.WriteAsync(record, ct);
-
-                return 50_000;
-            });
-
-        // Measured at 0.09 bytes per record. The encoder writes framing around
-        // the caller's buffer rather than staging a copy, so nothing here scales
-        // with record count.
-        AssertPerRecord(allocated, records: 50_000, ceiling: 0.5, "writing records");
+        AssertPerRecord(perRecord, ceiling: 1.0, "writing records");
     }
 
     [Fact]

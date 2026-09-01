@@ -330,7 +330,14 @@ git push origin v1.0.1
 ```
 
 That packs at the tagged version, pushes to NuGet, and opens a GitHub release
-with the packages attached. It needs a `NUGET_API_KEY` repository secret.
+with the packages attached.
+
+Publishing uses [trusted publishing][tp]: GitHub issues a signed token
+describing the repository and workflow, NuGet validates it against a policy
+configured on nuget.org, and returns a key valid for one hour and usable once.
+No publishing credential is stored in the repository.
+
+[tp]: https://learn.microsoft.com/en-us/nuget/nuget-org/trusted-publishing
 
 ### Layout
 

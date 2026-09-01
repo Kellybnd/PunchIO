@@ -1,0 +1,15 @@
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+.vs/
+artifacts/
+BenchmarkDotNet.Artifacts/
+TestResults/
+*.nupkg
+*.snupkg
+
+# BenchmarkDotNet
+BenchmarkDotNet.Artifacts/

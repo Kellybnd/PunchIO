@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>PunchIO</RootNamespace>
+    <AssemblyName>PunchIO.Core</AssemblyName>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>PunchIO.Core</PackageId>
+    <Description>High-throughput asynchronous file I/O for record-structured files: line sequential, fixed-length block, and variable-length block in Micro Focus and Fujitsu layouts. Configurable I/O depth and request size, relative and random access, and a Windows unbuffered fast path. No package dependencies.</Description>
+  </PropertyGroup>
+
+</Project>

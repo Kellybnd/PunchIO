@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Single framework: this publishes to a native shared library, and there
+         is no such thing as a multi-targeted .dll export surface. -->
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <RootNamespace>PunchIO.Exfh</RootNamespace>
+    <AssemblyName>punchio_exfh</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <PublishAot>true</PublishAot>
+    <NativeLib>Shared</NativeLib>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <StackTraceSupport>false</StackTraceSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PunchIO.Core\PunchIO.Core.csproj" />
+    <ProjectReference Include="..\PunchIO.Cobol\PunchIO.Cobol.csproj" />
+    <ProjectReference Include="..\PunchIO.Configuration\PunchIO.Configuration.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
+  </ItemGroup>
+
+</Project>

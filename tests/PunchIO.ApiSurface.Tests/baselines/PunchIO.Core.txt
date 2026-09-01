@@ -1,0 +1,398 @@
+    .ctor()
+    .ctor()
+    .ctor()
+    .ctor()
+    .ctor(Int32 blockCount, Int32 blockSize)
+    .ctor(Int32 blockCount, Int32 blockSize, Int32 alignment)
+    .ctor(Int32 recordLength, Byte padByte = default)
+    .ctor(Int32 recordLength, TrailingPartialRecord trailing = default)
+    .ctor(Int64 RecordNumber, ReadOnlyMemory<Byte> Record)
+    .ctor(Int64 byteOffset, Int32 maxRecordLength)
+    .ctor(LineSequentialOptions options)
+    .ctor(LineSequentialOptions options)
+    .ctor(LineSequentialOptions options)
+    .ctor(String Name, VariableRecordDescriptor Descriptor)
+    .ctor(String code)
+    .ctor(String message, FileStatus status, Exception innerException = default)
+    .ctor(String message, Int64 byteOffset)
+    .ctor(String name, RecordFormat format, FileIoOptions io)
+    .ctor(String profileName, String key, String message, Exception innerException = default)
+    .ctor(VariableRecordDescriptor descriptor)
+    .ctor(VariableRecordDescriptor descriptor)
+    BlockDevicePolicy Auto
+    BlockDevicePolicy Backend { get; set; }
+    BlockDevicePolicy ForceManaged
+    BlockDevicePolicy ForceNative
+    BlockSink Create(IBlockDevice device, Int32 queueDepth, Int32 blockSize)
+    BlockSource Create(IBlockDevice device, Int32 queueDepth, Int32 blockSize, Boolean ownsDevice = default)
+    Boolean AcceptEitherOnRead { get; set; }
+    Boolean Equals(FileStatus other)
+    Boolean Equals(Object obj)
+    Boolean Equals(Object obj)
+    Boolean Equals(Object obj)
+    Boolean Equals(Object obj)
+    Boolean Equals(Object obj)
+    Boolean Equals(RelativeRecord other)
+    Boolean Equals(VariableFormatCandidate other)
+    Boolean Equals(VariableFormatProbeResult other)
+    Boolean Equals(VariableRecordDescriptor other)
+    Boolean ExpandTabs { get; set; }
+    Boolean IsCompleted { get; }
+    Boolean IsIdentity { get; }
+    Boolean NullEscape { get; set; }
+    Boolean PinBlockSize { get; set; }
+    Boolean ReachedEndOfSample { get; set; }
+    Boolean RequiresTailPadding { get; }
+    Boolean RequiresTailPadding { get; }
+    Boolean RequiresTailPadding { get; }
+    Boolean RewritesBody { get; }
+    Boolean RewritesBody { get; }
+    Boolean RewritesBody { get; }
+    Boolean RewritesBody { get; }
+    Boolean StripTrailingSpaces { get; set; }
+    Boolean TrimTrailingSpaces { get; set; }
+    Boolean TryDecode(ReadOnlySpan<Byte> source, Span<Byte> destination, Int32 written)
+    Boolean TryEncode(ReadOnlySpan<Byte> source, Span<Byte> destination, Int32 written)
+    Boolean UseNativeFor(String path)
+    Boolean ValidateReservedBytes { get; set; }
+    Boolean ValidateSuffix { get; set; }
+    Boolean op_Equality(FileStatus left, FileStatus right)
+    Boolean op_Equality(RelativeRecord left, RelativeRecord right)
+    Boolean op_Equality(VariableFormatCandidate left, VariableFormatCandidate right)
+    Boolean op_Equality(VariableFormatProbeResult left, VariableFormatProbeResult right)
+    Boolean op_Equality(VariableRecordDescriptor left, VariableRecordDescriptor right)
+    Boolean op_Inequality(FileStatus left, FileStatus right)
+    Boolean op_Inequality(RelativeRecord left, RelativeRecord right)
+    Boolean op_Inequality(VariableFormatCandidate left, VariableFormatCandidate right)
+    Boolean op_Inequality(VariableFormatProbeResult left, VariableFormatProbeResult right)
+    Boolean op_Inequality(VariableRecordDescriptor left, VariableRecordDescriptor right)
+    Byte CarriageReturn { get; set; }
+    Byte DeletedMarker { get; set; }
+    Byte LineFeed { get; set; }
+    Byte Null { get; set; }
+    Byte PadByte { get; set; }
+    Byte PadByte { get; set; }
+    Byte PresentMarker { get; set; }
+    Byte Space { get; set; }
+    Byte Tab { get; set; }
+    Endianness BigEndian
+    Endianness Endianness { get; set; }
+    Endianness LittleEndian
+    FileIoOptions Default { get; }
+    FileIoOptions Io { get; }
+    FileProfile Find(String name)
+    FileProfile Get(String name)
+    FileShare Share { get; set; }
+    FileStatus AttributeMismatch { get; }
+    FileStatus EndOfFile { get; }
+    FileStatus FileNotFound { get; }
+    FileStatus Ok { get; }
+    FileStatus PermanentError { get; }
+    FileStatus RecordNotFound { get; }
+    FileStatus Status { get; }
+    FrameStatus EndOfData
+    FrameStatus Invalid
+    FrameStatus NeedMoreData
+    FrameStatus Ok
+    FrameStatus TryFrame(ReadOnlySpan<Byte> input, Boolean isFinalBlock, Int32 consumed, Int32 recordStart, Int32 recordLength)
+    FrameStatus TryFrame(ReadOnlySpan<Byte> input, Boolean isFinalBlock, Int32 consumed, Int32 recordStart, Int32 recordLength)
+    FrameStatus TryFrame(ReadOnlySpan<Byte> input, Boolean isFinalBlock, Int32 consumed, Int32 recordStart, Int32 recordLength)
+    FrameStatus TryFrame(ReadOnlySpan<Byte> input, Boolean isFinalBlock, Int32 consumed, Int32 recordStart, Int32 recordLength)
+    IAsyncEnumerable<ReadOnlyMemory<Byte>> ReadAllAsync(CancellationToken cancellationToken = default)
+    IAsyncEnumerable<ReadOnlyMemory<Byte>> ReadAllAsync(CancellationToken cancellationToken = default)
+    IAsyncEnumerable<ReadOnlyMemory<Byte>> ReadAllAsync(CancellationToken cancellationToken = default)
+    IAsyncEnumerable<RelativeRecord> ReadAllAsync(CancellationToken cancellationToken = default)
+    IBlockDevice Open(String path, FileAccess access, FileShare share, BlockDevicePolicy policy = default)
+    IBlockDevice Open(String path, FileMode mode, FileAccess access, FileShare share, BlockDevicePolicy policy = default)
+    IBlockSlab AllocateSlab(Int32 blockCount, Int32 blockSize)
+    IBlockSlab AllocateSlab(Int32 blockCount, Int32 blockSize)
+    IBlockSlab AllocateSlab(Int32 blockCount, Int32 blockSize)
+    IReadOnlyCollection<String> Names { get; }
+    IReadOnlyList<VariableFormatCandidate> DefaultCandidates { get; }
+    IReadOnlyList<VariableFormatProbeResult> Probe(ReadOnlySpan<Byte> sample, IEnumerable<VariableFormatCandidate> candidates = default, Int32 maxRecords = default)
+    IRecordReader OpenRead(String path)
+    IRecordWriter CreateWrite(String path)
+    Int32 Alignment { get; set; }
+    Int32 Alignment { get; }
+    Int32 Alignment { get; }
+    Int32 Alignment { get; }
+    Int32 Alignment { get; }
+    Int32 BlockCount { get; }
+    Int32 BlockCount { get; }
+    Int32 BlockCount { get; }
+    Int32 BlockSize { get; set; }
+    Int32 BlockSize { get; }
+    Int32 BlockSize { get; }
+    Int32 BlockSize { get; }
+    Int32 BlockSize { get; }
+    Int32 BlockSize { get; }
+    Int32 BodyLength(ReadOnlySpan<Byte> record)
+    Int32 BodyLength(ReadOnlySpan<Byte> record)
+    Int32 BodyLength(ReadOnlySpan<Byte> record)
+    Int32 BodyLength(ReadOnlySpan<Byte> record)
+    Int32 DefaultMaxRecords
+    Int32 DefaultSampleBytes
+    Int32 DistinctRecordLengths { get; set; }
+    Int32 FlagByteOffset { get; set; }
+    Int32 FramedLength(Int32 dataLength, VariableRecordDescriptor descriptor)
+    Int32 GetHashCode()
+    Int32 GetHashCode()
+    Int32 GetHashCode()
+    Int32 GetHashCode()
+    Int32 GetHashCode()
+    Int32 LengthFieldOffset { get; set; }
+    Int32 LengthFieldWidth { get; set; }
+    Int32 MaxBodyLength(Int32 recordLength)
+    Int32 MaxBodyLength(Int32 recordLength)
+    Int32 MaxBodyLength(Int32 recordLength)
+    Int32 MaxBodyLength(Int32 recordLength)
+    Int32 MaxExpansion(Int32 sourceLength)
+    Int32 MaxHeaderLength { get; }
+    Int32 MaxHeaderLength { get; }
+    Int32 MaxHeaderLength { get; }
+    Int32 MaxHeaderLength { get; }
+    Int32 MaxRecordLength { get; set; }
+    Int32 MaxRecordLength { get; }
+    Int32 MaxRecordLength { get; }
+    Int32 MaxTrailerLength { get; }
+    Int32 MaxTrailerLength { get; }
+    Int32 MaxTrailerLength { get; }
+    Int32 MaxTrailerLength { get; }
+    Int32 MinimumLookahead { get; }
+    Int32 MinimumLookahead { get; }
+    Int32 MinimumLookahead { get; }
+    Int32 MinimumLookahead { get; }
+    Int32 PrefixBytes { get; set; }
+    Int32 QueueDepth { get; set; }
+    Int32 RecordLength { get; set; }
+    Int32 RecordLength { get; set; }
+    Int32 RecordLength { get; }
+    Int32 RecordLength { get; }
+    Int32 RecordLength { get; }
+    Int32 RecordsFramed { get; set; }
+    Int32 ResolveBlockSize(Int32 alignment, Nullable<Int32> recordLength)
+    Int32 SlotHeaderLength { get; set; }
+    Int32 SlotSize { get; }
+    Int32 SuffixBytes { get; set; }
+    Int32 TabStopWidth { get; set; }
+    Int32 WriteBody(ReadOnlySpan<Byte> record, Span<Byte> destination)
+    Int32 WriteBody(ReadOnlySpan<Byte> record, Span<Byte> destination)
+    Int32 WriteBody(ReadOnlySpan<Byte> record, Span<Byte> destination)
+    Int32 WriteBody(ReadOnlySpan<Byte> record, Span<Byte> destination)
+    Int32 WriteFraming(Span<Byte> destination, Int32 dataLength, VariableRecordDescriptor descriptor)
+    Int32 WriteHeader(Span<Byte> destination, Int32 bodyLength)
+    Int32 WriteHeader(Span<Byte> destination, Int32 bodyLength)
+    Int32 WriteHeader(Span<Byte> destination, Int32 bodyLength)
+    Int32 WriteHeader(Span<Byte> destination, Int32 bodyLength)
+    Int32 WritePrefix(Span<Byte> destination, Int32 dataLength, VariableRecordDescriptor descriptor)
+    Int32 WriteSuffix(Span<Byte> destination, Int32 dataLength, VariableRecordDescriptor descriptor)
+    Int32 WriteTrailer(Span<Byte> destination, Int32 bodyLength)
+    Int32 WriteTrailer(Span<Byte> destination, Int32 bodyLength)
+    Int32 WriteTrailer(Span<Byte> destination, Int32 bodyLength)
+    Int32 WriteTrailer(Span<Byte> destination, Int32 bodyLength)
+    Int32 ZeroLengthRecords { get; set; }
+    Int32 value__
+    Int32 value__
+    Int32 value__
+    Int32 value__
+    Int32 value__
+    Int32 value__
+    Int32 value__
+    Int32 value__
+    Int64 BlockOffset { get; }
+    Int64 ByteOffset { get; }
+    Int64 ByteOffset { get; }
+    Int64 BytesConsumed { get; set; }
+    Int64 Length { get; }
+    Int64 Length { get; }
+    Int64 Length { get; }
+    Int64 Length { get; }
+    Int64 Length { get; }
+    Int64 Length { get; }
+    Int64 Length { get; }
+    Int64 MaxDataLength { get; }
+    Int64 RecordNumber { get; set; }
+    Int64 RecordNumber { get; }
+    Int64 RecordNumber { get; }
+    Int64 RecordNumber { get; }
+    Int64 RecordNumber { get; }
+    Int64 RecordNumber { get; }
+    Int64 RecordOffset { get; }
+    Int64 RecordOffset { get; }
+    Int64 RecordOffset { get; }
+    Int64 SlotCount { get; }
+    LengthBasis DataOnly
+    LengthBasis LengthIncludes { get; set; }
+    LengthBasis WithPrefix
+    LengthBasis WithPrefixAndSuffix
+    LineSequentialOptions Line { get; set; }
+    LineSequentialReader OpenLineSequentialRead(String path, LineSequentialOptions lineOptions = default, FileIoOptions options = default)
+    LineSyntax Ascii { get; }
+    LineSyntax Ebcdic { get; }
+    LineSyntax Syntax { get; set; }
+    LineTerminator Cr
+    LineTerminator CrLf
+    LineTerminator Lf
+    LineTerminator Terminator { get; set; }
+    ManagedBlockDevice Open(String path, FileAccess access, FileShare share)
+    ManagedBlockDevice Open(String path, FileMode mode, FileAccess access, FileShare share)
+    Memory<Byte> Block(Int32 index)
+    Memory<Byte> Block(Int32 index)
+    Memory<Byte> Block(Int32 index)
+    ProbeConfidence Confidence { get; set; }
+    ProbeConfidence High
+    ProbeConfidence Low
+    ProbeConfidence Medium
+    ProbeConfidence None
+    RandomAccessFile Open(String path, FileAccess access, FileIoOptions options = default)
+    RandomAccessFile OpenRandomAccess(String path, FileAccess access, FileIoOptions options = default)
+    ReadOnlyMemory<Byte> Current { get; }
+    ReadOnlyMemory<Byte> Current { get; }
+    ReadOnlyMemory<Byte> Current { get; }
+    ReadOnlyMemory<Byte> Record { get; set; }
+    RecordFormat FixedBlock
+    RecordFormat Format { get; }
+    RecordFormat LineSequential
+    RecordFormat VariableBlock
+    RelativeFile Open(String path, RelativeFileOptions layout, FileAccess access, FileIoOptions options = default)
+    RelativeFile OpenRelative(String path, RelativeFileOptions layout, FileAccess access, FileIoOptions options = default)
+    SequentialReader<FixedBlockFramer> OpenFixedBlockRead(String path, Int32 recordLength, FileIoOptions options = default, TrailingPartialRecord trailing = default)
+    SequentialReader<TFramer> Create(BlockSource source, TFramer framer, Int32 maxRecordLength)
+    SequentialReader<VariableRecordFramer> OpenVariableRead(String path, VariableRecordDescriptor descriptor, FileIoOptions options = default)
+    SequentialWriter<FixedBlockEncoder> CreateFixedBlockWrite(String path, Int32 recordLength, FileIoOptions options = default, Byte padByte = default)
+    SequentialWriter<LineSequentialEncoder> CreateLineSequentialWrite(String path, LineSequentialOptions lineOptions = default, FileIoOptions options = default)
+    SequentialWriter<TEncoder> Create(BlockSink sink, TEncoder encoder)
+    SequentialWriter<VariableRecordEncoder> CreateVariableWrite(String path, VariableRecordDescriptor descriptor, FileIoOptions options = default)
+    String Code { get; }
+    String Key { get; }
+    String Name { get; set; }
+    String Name { get; set; }
+    String Name { get; }
+    String ProfileName { get; }
+    String Rejection { get; set; }
+    String ToString()
+    String ToString()
+    String ToString()
+    String ToString()
+    String ToString()
+    TrailingPartialRecord Ignore
+    TrailingPartialRecord Lenient
+    TrailingPartialRecord Strict
+    TrailingPartialRecord TrailingPartialRecord { get; set; }
+    ValueTask CompleteAsync(CancellationToken cancellationToken = default)
+    ValueTask CompleteAsync(CancellationToken cancellationToken = default)
+    ValueTask CompleteAsync(CancellationToken cancellationToken = default)
+    ValueTask DisposeAsync()
+    ValueTask DisposeAsync()
+    ValueTask DisposeAsync()
+    ValueTask DisposeAsync()
+    ValueTask DisposeAsync()
+    ValueTask DisposeAsync()
+    ValueTask DisposeAsync()
+    ValueTask DisposeAsync()
+    ValueTask DisposeAsync()
+    ValueTask FlushAsync(Boolean toDisk = default, CancellationToken cancellationToken = default)
+    ValueTask FlushAsync(Boolean toDisk = default, CancellationToken cancellationToken = default)
+    ValueTask FlushAsync(Boolean toDisk = default, CancellationToken cancellationToken = default)
+    ValueTask FlushAsync(Boolean toDisk = default, CancellationToken cancellationToken = default)
+    ValueTask FlushAsync(Boolean toDisk = default, CancellationToken cancellationToken = default)
+    ValueTask FlushAsync(Boolean toDisk, CancellationToken cancellationToken)
+    ValueTask FlushAsync(Boolean toDisk, CancellationToken cancellationToken)
+    ValueTask FlushAsync(Boolean toDisk, CancellationToken cancellationToken)
+    ValueTask ReadAsync(Int64 recordNumber, Memory<Byte> destination, CancellationToken cancellationToken = default)
+    ValueTask RewriteAsync(Int64 recordNumber, ReadOnlyMemory<Byte> record, CancellationToken cancellationToken = default)
+    ValueTask SetLengthAsync(Int64 length, CancellationToken cancellationToken = default)
+    ValueTask SetLengthAsync(Int64 length, CancellationToken cancellationToken)
+    ValueTask SetLengthAsync(Int64 length, CancellationToken cancellationToken)
+    ValueTask SetLengthAsync(Int64 length, CancellationToken cancellationToken)
+    ValueTask WriteAsync(Int64 recordNumber, ReadOnlyMemory<Byte> record, CancellationToken cancellationToken = default)
+    ValueTask WriteAsync(ReadOnlyMemory<Byte> record, CancellationToken cancellationToken = default)
+    ValueTask WriteAsync(ReadOnlyMemory<Byte> record, CancellationToken cancellationToken = default)
+    ValueTask WriteAsync(ReadOnlyMemory<Byte> source, CancellationToken cancellationToken = default)
+    ValueTask WriteAsync(ReadOnlyMemory<Byte> source, Int64 fileOffset, CancellationToken cancellationToken)
+    ValueTask WriteAsync(ReadOnlyMemory<Byte> source, Int64 fileOffset, CancellationToken cancellationToken)
+    ValueTask WriteAsync(ReadOnlyMemory<Byte> source, Int64 fileOffset, CancellationToken cancellationToken)
+    ValueTask WriteAsync(ReadOnlyMemory<Byte> source, Int64 offset, CancellationToken cancellationToken = default)
+    ValueTask<Boolean> DeleteAsync(Int64 recordNumber, CancellationToken cancellationToken = default)
+    ValueTask<Boolean> ExistsAsync(Int64 recordNumber, CancellationToken cancellationToken = default)
+    ValueTask<Boolean> MoveNextAsync(CancellationToken cancellationToken = default)
+    ValueTask<Boolean> MoveNextAsync(CancellationToken cancellationToken = default)
+    ValueTask<Boolean> MoveNextAsync(CancellationToken cancellationToken = default)
+    ValueTask<Boolean> TryReadAsync(Int64 recordNumber, Memory<Byte> destination, CancellationToken cancellationToken = default)
+    ValueTask<IReadOnlyList<VariableFormatProbeResult>> ProbeFileAsync(String path, IEnumerable<VariableFormatCandidate> candidates = default, Int32 sampleBytes = default, Int32 maxRecords = default, CancellationToken cancellationToken = default)
+    ValueTask<Int32> ReadAsync(Memory<Byte> destination, Int64 fileOffset, CancellationToken cancellationToken)
+    ValueTask<Int32> ReadAsync(Memory<Byte> destination, Int64 fileOffset, CancellationToken cancellationToken)
+    ValueTask<Int32> ReadAsync(Memory<Byte> destination, Int64 fileOffset, CancellationToken cancellationToken)
+    ValueTask<Int32> ReadAsync(Memory<Byte> destination, Int64 offset, CancellationToken cancellationToken = default)
+    ValueTask<ReadOnlyMemory<Byte>> NextBlockAsync(CancellationToken cancellationToken = default)
+    VariableFormatCandidate <Clone>$()
+    VariableFormatProbeResult <Clone>$()
+    VariableFormatProbeResult Evaluate(ReadOnlySpan<Byte> sample, VariableFormatCandidate candidate, Int32 maxRecords)
+    VariableRecordDescriptor Descriptor { get; set; }
+    VariableRecordDescriptor Descriptor { get; set; }
+    VariableRecordDescriptor Descriptor { get; }
+    VariableRecordDescriptor Descriptor { get; }
+    VariableRecordDescriptor Fujitsu { get; }
+    VariableRecordDescriptor MicroFocus { get; }
+    VariableRecordDescriptor Variable { get; set; }
+    Void Deconstruct(Int64 RecordNumber, ReadOnlyMemory`1 Record)
+    Void Deconstruct(String Name, VariableRecordDescriptor Descriptor)
+    Void Dispose()
+    Void Dispose()
+    Void Dispose()
+    Void Dispose()
+    Void Validate()
+    Void Validate()
+    Void Validate()
+    WindowsBlockDevice Open(String path, FileAccess access, FileShare share)
+    WindowsBlockDevice Open(String path, FileMode mode, FileAccess access, FileShare share)
+class PunchIO.Buffers.AlignedNativeSlab
+class PunchIO.Buffers.PinnedArraySlab
+class PunchIO.Devices.BlockDeviceFactory
+class PunchIO.Devices.ManagedBlockDevice
+class PunchIO.Devices.WindowsBlockDevice
+class PunchIO.FileIoOptions
+class PunchIO.FileProfile
+class PunchIO.FileProfileException
+class PunchIO.Files.RandomAccessFile
+class PunchIO.Files.RelativeFile
+class PunchIO.Files.RelativeFileOptions
+class PunchIO.Framing.LineSequentialOptions
+class PunchIO.Pump.BlockSink
+class PunchIO.Pump.BlockSource
+class PunchIO.PunchIoException
+class PunchIO.Readers.LineSequentialReader
+class PunchIO.Readers.SequentialReader`1
+class PunchIO.RecordFile
+class PunchIO.RecordFormatException
+class PunchIO.RecordTooLargeException
+class PunchIO.Tools.VariableFormatCandidate
+class PunchIO.Tools.VariableFormatProbe
+class PunchIO.Tools.VariableFormatProbeResult
+class PunchIO.Writers.SequentialWriter`1
+enum PunchIO.Devices.BlockDevicePolicy
+enum PunchIO.Framing.Endianness
+enum PunchIO.Framing.FrameStatus
+enum PunchIO.Framing.LengthBasis
+enum PunchIO.Framing.LineTerminator
+enum PunchIO.Framing.TrailingPartialRecord
+enum PunchIO.RecordFormat
+enum PunchIO.Tools.ProbeConfidence
+interface PunchIO.Buffers.IBlockSlab
+interface PunchIO.Devices.IBlockDevice
+interface PunchIO.Framing.IRecordEncoder
+interface PunchIO.Framing.IRecordFramer
+interface PunchIO.IFileProfileProvider
+interface PunchIO.Readers.IRecordReader
+interface PunchIO.Writers.IRecordWriter
+struct PunchIO.FileStatus
+struct PunchIO.Files.RelativeRecord
+struct PunchIO.Framing.FixedBlockEncoder
+struct PunchIO.Framing.FixedBlockFramer
+struct PunchIO.Framing.LineRecordTransform
+struct PunchIO.Framing.LineSequentialEncoder
+struct PunchIO.Framing.LineSequentialFramer
+struct PunchIO.Framing.LineSyntax
+struct PunchIO.Framing.VariableRecordDescriptor
+struct PunchIO.Framing.VariableRecordEncoder
+struct PunchIO.Framing.VariableRecordFramer

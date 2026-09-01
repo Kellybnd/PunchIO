@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <RootNamespace>PunchIO.ApiSurface.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\PunchIO.Core\PunchIO.Core.csproj" />
+    <ProjectReference Include="..\..\src\PunchIO.Configuration\PunchIO.Configuration.csproj" />
+    <ProjectReference Include="..\..\src\PunchIO.Cobol\PunchIO.Cobol.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="baselines\*.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

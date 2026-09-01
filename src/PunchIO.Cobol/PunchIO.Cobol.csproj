@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>PunchIO.Cobol</RootNamespace>
+    <AssemblyName>PunchIO.Cobol</AssemblyName>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>PunchIO.Cobol</PackageId>
+    <Description>An external file handler (EXFH) boundary over PunchIO.Core, callable from managed COBOL. Normalises Micro Focus and Fujitsu operations into one dispatcher and reports every failure as a COBOL file status.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PunchIO.Core\PunchIO.Core.csproj" />
+  </ItemGroup>
+
+</Project>

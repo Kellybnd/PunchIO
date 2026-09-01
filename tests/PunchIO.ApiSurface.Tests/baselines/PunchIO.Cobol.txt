@@ -1,0 +1,97 @@
+    .ctor()
+    .ctor()
+    .ctor()
+    .ctor(IExfhProfileResolver resolver)
+    .ctor(IExfhProfileResolver resolver)
+    .ctor(Span<Byte> fcd, FcdLayout layout = default)
+    Boolean Equals(FcdLayout other)
+    Boolean Equals(Object obj)
+    Boolean IsUsable { get; }
+    Boolean op_Equality(FcdLayout left, FcdLayout right)
+    Boolean op_Inequality(FcdLayout left, FcdLayout right)
+    Byte Version { get; }
+    FcdLayout <Clone>$()
+    FcdLayout Fcd2 { get; }
+    FcdLayout Fcd3 { get; }
+    FcdLayout For(ReadOnlySpan<Byte> fcd)
+    FcdLayout Layout { get; }
+    FileOperation Close
+    FileOperation Commit
+    FileOperation Delete
+    FileOperation OpenExtend
+    FileOperation OpenInput
+    FileOperation OpenIo
+    FileOperation OpenOutput
+    FileOperation Operation { get; set; }
+    FileOperation ReadNext
+    FileOperation ReadRandom
+    FileOperation Rewrite
+    FileOperation Rollback
+    FileOperation Start
+    FileOperation ToOperation(UInt16 opcode)
+    FileOperation Unknown
+    FileOperation Unlock
+    FileOperation Write
+    FileProfile Resolve(String fileName)
+    FileStatus GetStatus()
+    FileStatus Status { get; set; }
+    Int32 CurrentRecordLength { get; set; }
+    Int32 CurrentRecordLengthOffset { get; set; }
+    Int32 DeclaredLength { get; }
+    Int32 Execute(ReadOnlySpan<Byte> opcode, Span<Byte> fcd, Span<Byte> recordArea)
+    Int32 FileStatusOffset { get; set; }
+    Int32 GetHashCode()
+    Int32 HandleId { get; set; }
+    Int32 HandleId { get; set; }
+    Int32 HandleId { get; set; }
+    Int32 LengthOffset { get; set; }
+    Int32 MaxRecordLength { get; }
+    Int32 MaxRecordLengthOffset { get; set; }
+    Int32 MinimumLength { get; set; }
+    Int32 NameLengthOffset { get; set; }
+    Int32 NameOffset { get; set; }
+    Int32 OpenFileCount { get; }
+    Int32 OpenFileCount { get; }
+    Int32 OrganizationOffset { get; set; }
+    Int32 RecordAddressOffset { get; set; }
+    Int32 RecordLength { get; set; }
+    Int32 RecordLength { get; set; }
+    Int32 RelativeKeyOffset { get; set; }
+    Int32 UserHandleOffset { get; set; }
+    Int32 VersionOffset { get; set; }
+    Int32 value__
+    Int64 RecordNumber { get; set; }
+    Int64 RecordNumber { get; set; }
+    Int64 RelativeKey { get; set; }
+    String FileName { get; set; }
+    String FileName { get; }
+    String ToString()
+    UInt16 Close
+    UInt16 Commit
+    UInt16 Delete
+    UInt16 OpenExtend
+    UInt16 OpenInput
+    UInt16 OpenIo
+    UInt16 OpenOutput
+    UInt16 ReadNext
+    UInt16 ReadRandom
+    UInt16 Rewrite
+    UInt16 Rollback
+    UInt16 Start
+    UInt16 Unlock
+    UInt16 Write
+    Void Dispose()
+    Void Dispose()
+    Void Execute(FileOperationRequest request, Span<Byte> recordArea, FileOperationResult result)
+    Void Reset()
+    Void Reset()
+    Void SetStatus(FileStatus status)
+class PunchIO.Cobol.Exfh
+class PunchIO.Cobol.ExfhFileHandler
+class PunchIO.Cobol.ExfhOpcodes
+class PunchIO.Cobol.FcdLayout
+class PunchIO.Cobol.FileOperationRequest
+class PunchIO.Cobol.FileOperationResult
+enum PunchIO.Cobol.FileOperation
+interface PunchIO.Cobol.IExfhProfileResolver
+struct PunchIO.Cobol.FcdView

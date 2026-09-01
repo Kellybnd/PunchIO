@@ -1,0 +1,53 @@
+<Project>
+
+  <!-- Packaging lives here rather than in Directory.Build.props because it keys
+       off IsPackable, which each shipping project sets in its own body.
+       Directory.Build.props is imported *above* the project body, so a condition
+       on IsPackable there is evaluated before the project has set it and silently
+       never matches. Directory.Build.targets is imported below the body, so it
+       sees the real value. -->
+  <PropertyGroup Condition="'$(IsPackable)' == 'true'">
+    <Product>PunchIO</Product>
+
+    <Authors>Kelly Hollis</Authors>
+    <Company>Kelly Hollis</Company>
+    <!-- No "All Rights Reserved": under MIT most rights are in fact granted,
+         and a package whose copyright field says otherwise sends adopters a
+         contradictory signal. -->
+    <Copyright>Copyright (c) 2026 Kelly Hollis</Copyright>
+
+    <!-- Set explicitly rather than through VersionPrefix alone: MSBuild seeds
+         properties from environment variables, so a stray Version in the build
+         environment would otherwise decide what these packages are called.
+
+         Passing -p:VersionSuffix=rc1 still produces a prerelease; the default
+         is the clean release version. -->
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <Version Condition="'$(VersionSuffix)' == ''">$(VersionPrefix)</Version>
+    <Version Condition="'$(VersionSuffix)' != ''">$(VersionPrefix)-$(VersionSuffix)</Version>
+    <PackageVersion>$(Version)</PackageVersion>
+
+    <!-- An SPDX expression rather than a packed file: nuget.org renders it as a
+         recognised licence with a link, instead of an opaque attachment a
+         reviewer has to open. -->
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>cobol;file-io;async;record;fujitsu;micro-focus;exfh;sequential</PackageTags>
+
+    <PackageProjectUrl>https://github.com/Kellybnd/PunchIO</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Kellybnd/PunchIO</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+    <EnablePackageValidation>true</EnablePackageValidation>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+</Project>

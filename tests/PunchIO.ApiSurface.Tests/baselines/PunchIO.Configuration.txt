@@ -1,0 +1,60 @@
+    .ctor()
+    .ctor()
+    .ctor()
+    .ctor()
+    .ctor()
+    .ctor()
+    .ctor(PunchIoConfiguration configuration)
+    Boolean TryParse(String text, Int64 value)
+    Dictionary<String, FileProfileConfiguration> Files { get; }
+    FileProfile Create(String name, FileProfileConfiguration configuration)
+    FileProfile Find(String name)
+    FileProfile Get(String name)
+    FixedConfiguration Fixed { get; set; }
+    IReadOnlyCollection<String> Names { get; }
+    IServiceCollection AddPunchIO(IServiceCollection services, IConfiguration configuration)
+    Int64 Parse(String text)
+    IoConfiguration Io { get; set; }
+    LineConfiguration Line { get; set; }
+    Nullable<Boolean> AcceptEitherOnRead { get; set; }
+    Nullable<Boolean> ExpandTabs { get; set; }
+    Nullable<Boolean> NullEscape { get; set; }
+    Nullable<Boolean> PinBlockSize { get; set; }
+    Nullable<Boolean> StripTrailingSpaces { get; set; }
+    Nullable<Boolean> TrimTrailingSpaces { get; set; }
+    Nullable<Boolean> ValidateReservedBytes { get; set; }
+    Nullable<Boolean> ValidateSuffix { get; set; }
+    Nullable<Int32> Alignment { get; set; }
+    Nullable<Int32> FlagByteOffset { get; set; }
+    Nullable<Int32> LengthFieldOffset { get; set; }
+    Nullable<Int32> LengthFieldWidth { get; set; }
+    Nullable<Int32> PadByte { get; set; }
+    Nullable<Int32> PrefixBytes { get; set; }
+    Nullable<Int32> QueueDepth { get; set; }
+    Nullable<Int32> RecordLength { get; set; }
+    Nullable<Int32> SuffixBytes { get; set; }
+    Nullable<Int32> TabStopWidth { get; set; }
+    PunchIoConfiguration Bind(IConfiguration configuration)
+    String Backend { get; set; }
+    String BlockSize { get; set; }
+    String Encoding { get; set; }
+    String Endianness { get; set; }
+    String Format { get; set; }
+    String LengthIncludes { get; set; }
+    String MaxRecordLength { get; set; }
+    String Preset { get; set; }
+    String SectionName
+    String Share { get; set; }
+    String Terminator { get; set; }
+    String TrailingPartialRecord { get; set; }
+    VariableConfiguration Variable { get; set; }
+class PunchIO.Configuration.FileProfileConfiguration
+class PunchIO.Configuration.FileProfileFactory
+class PunchIO.Configuration.FileProfileProvider
+class PunchIO.Configuration.FixedConfiguration
+class PunchIO.Configuration.IoConfiguration
+class PunchIO.Configuration.LineConfiguration
+class PunchIO.Configuration.PunchIoConfiguration
+class PunchIO.Configuration.ServiceCollectionExtensions
+class PunchIO.Configuration.SizeValue
+class PunchIO.Configuration.VariableConfiguration

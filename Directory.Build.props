@@ -1,0 +1,40 @@
+<Project>
+
+  <PropertyGroup>
+    <!-- Set before the conditional groups below so they can test it. Directory.Build.props
+         is imported above the project's own PropertyGroups, so a project setting
+         IsTestProject itself would be evaluated too late to be seen here. -->
+    <IsTestProject Condition="$(MSBuildProjectName.EndsWith('Tests'))">true</IsTestProject>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;net8.0</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <!-- Public API quality: required on shipping libraries, not on tests. -->
+  <PropertyGroup Condition="'$(IsTestProject)' != 'true'">
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+    <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <!-- xUnit v3 runs on Microsoft.Testing.Platform, not VSTest. The .NET 10 SDK
+         requires this opt-in for `dotnet test` to drive MTP test projects. -->
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,23 @@
+<Solution>
+  <Folder Name="/bench/">
+    <Project Path="bench/PunchIO.Benchmarks/PunchIO.Benchmarks.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/PunchIO.Samples/PunchIO.Samples.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/PunchIO.Cobol/PunchIO.Cobol.csproj" />
+    <Project Path="src/PunchIO.Configuration/PunchIO.Configuration.csproj" />
+    <Project Path="src/PunchIO.Core/PunchIO.Core.csproj" />
+    <Project Path="src/PunchIO.Exfh.Native/PunchIO.Exfh.Native.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PunchIO.ApiSurface.Tests/PunchIO.ApiSurface.Tests.csproj" />
+    <Project Path="tests/PunchIO.Cobol.Tests/PunchIO.Cobol.Tests.csproj" />
+    <Project Path="tests/PunchIO.Configuration.Tests/PunchIO.Configuration.Tests.csproj" />
+    <Project Path="tests/PunchIO.Core.Tests/PunchIO.Core.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/PunchIO.Probe/PunchIO.Probe.csproj" />
+  </Folder>
+</Solution>

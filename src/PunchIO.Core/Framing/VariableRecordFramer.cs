@@ -51,7 +51,11 @@ public readonly struct VariableRecordFramer : IRecordFramer
 
         // Read into a long: a four-byte field with its high bit set is an ordinary
         // bit pattern in a corrupt file, and an int would make it negative.
-        long stored = ReadLength(input.Slice(d.LengthFieldOffset, d.LengthFieldWidth), d.Endianness);
+        long control = ReadLength(input.Slice(d.LengthFieldOffset, d.LengthFieldWidth), d.Endianness);
+
+        // Micro Focus packs a record status into the top bits of the same field.
+        int status = d.StatusBits > 0 ? (int)(control >> d.LengthBits) : 0;
+        long stored = d.StatusBits > 0 ? control & ((1L << d.LengthBits) - 1) : control;
 
         long dataLength = d.LengthIncludes switch
         {
@@ -68,6 +72,14 @@ public readonly struct VariableRecordFramer : IRecordFramer
 
         if (input.Length < padded)
             return isFinalBlock ? FrameStatus.Invalid : FrameStatus.NeedMoreData;
+
+        // Not a user data record: the file header, a deleted slot, or one the
+        // runtime keeps for itself. Consume it and let the caller frame on.
+        if (d.StatusBits > 0 && status != d.DataRecordStatus)
+        {
+            consumed = padded;
+            return FrameStatus.Skip;
+        }
 
         if (d.ValidateSuffix)
         {
@@ -119,7 +131,7 @@ public readonly struct VariableRecordFramer : IRecordFramer
 
         WriteLength(
             destination.Slice(descriptor.LengthFieldOffset, descriptor.LengthFieldWidth),
-            StoredLength(dataLength, descriptor),
+            ControlValue(dataLength, descriptor),
             descriptor.Endianness);
 
         return descriptor.PrefixBytes;
@@ -149,6 +161,20 @@ public readonly struct VariableRecordFramer : IRecordFramer
         }
 
         return trailer;
+    }
+
+    /// <summary>
+    /// The value the prefix's field carries: the stored length, with the user
+    /// data status folded into its top bits for formats that pack the two
+    /// together.
+    /// </summary>
+    private static long ControlValue(int dataLength, in VariableRecordDescriptor descriptor)
+    {
+        long stored = StoredLength(dataLength, descriptor);
+
+        return descriptor.StatusBits > 0
+            ? stored | ((long)descriptor.DataRecordStatus << descriptor.LengthBits)
+            : stored;
     }
 
     private static long StoredLength(int dataLength, in VariableRecordDescriptor descriptor) =>

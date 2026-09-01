@@ -170,13 +170,36 @@ public class SequentialWriterTests
     }
 
     [Fact]
-    public async Task WritesMicroFocusRecordsWithAFourByteHeaderAndNoSuffix()
+    public async Task WritesMicroFocusRecordsBehindTheStandardFileHeader()
     {
         var content = await WriteAllAsync(
-            new VariableRecordEncoder(VariableRecordDescriptor.MicroFocus),
+            new VariableRecordEncoder(VariableRecordDescriptor.MicroFocus()),
             [Ascii("ABC")]);
 
-        Assert.Equal<byte[]>([0, 3, 0, 0, 0x41, 0x42, 0x43], content);
+        Assert.Equal(MicroFocusFileHeader.Length + 8, content.Length);
+
+        // The header is a system record of 126 bytes, which with its two-byte
+        // control field makes the documented 128.
+        Assert.Equal<byte[]>([0x30, 0x7E, 0, 0], content[..4]);
+        Assert.Equal<byte[]>([0x00, 0x3E], content[36..38]);   // reserved, always 62
+        Assert.Equal(1, content[39]);                          // sequential
+        Assert.Equal(1, content[48]);                          // variable format
+        Assert.Equal<byte[]>([0x0F, 0xFF], content[56..58]);    // maximum record length
+        Assert.Equal<byte[]>([0x00, 0x00], content[60..62]);    // minimum record length
+
+        // Then the record: status 4 over a length of 3, and three bytes of
+        // padding to put the next record on a four-byte boundary.
+        Assert.Equal<byte[]>([0x40, 0x03, 0x41, 0x42, 0x43, 0, 0, 0], content[128..]);
+    }
+
+    [Fact]
+    public async Task AMicroFocusFileWithNoRecordsIsStillAValidFile()
+    {
+        var content = await WriteAllAsync(
+            new VariableRecordEncoder(VariableRecordDescriptor.MicroFocus()), []);
+
+        Assert.Equal(MicroFocusFileHeader.Length, content.Length);
+        Assert.Equal<byte[]>([0x30, 0x7E], content[..2]);
     }
 
     [Fact]
@@ -250,21 +273,27 @@ public class SequentialWriterTests
     }
 
     [Theory]
-    [InlineData(65_535, true)]    // the largest a 2-byte length field can hold
-    [InlineData(65_536, false)]   // one byte too many
+    [InlineData(4_095, true)]    // the largest a twelve-bit length can hold
+    [InlineData(4_096, false)]   // one byte too many
     [InlineData(80_000, false)]
     public async Task RefusesARecordTheLengthFieldCannotRepresent(int length, bool shouldSucceed)
     {
-        // Micro Focus stores the length in two bytes. Writing more than 65,535
-        // bytes would store the low 16 bits and produce a file that reframes
-        // into garbage on read, so it is refused rather than truncated.
-        var encoder = new VariableRecordEncoder(VariableRecordDescriptor.MicroFocus);
+        // A short Micro Focus control field leaves twelve bits for the length.
+        // Writing more would store the low twelve bits and produce a file that
+        // reframes into garbage on read, so it is refused rather than truncated.
+        var descriptor = VariableRecordDescriptor.MicroFocus();
+        var encoder = new VariableRecordEncoder(descriptor);
         var record = new byte[length];
 
         if (shouldSucceed)
         {
             var content = await WriteAllAsync(encoder, [record], blockSize: 1 << 20);
-            Assert.Equal(length + 4, content.Length);
+
+            Assert.Equal(
+                MicroFocusFileHeader.Length
+                    + VariableRecordFramer.FramedLength(length, descriptor),
+                content.Length);
+
             return;
         }
 
@@ -277,7 +306,8 @@ public class SequentialWriterTests
     [Fact]
     public void ReportsTheLargestRecordEachLayoutCanDescribe()
     {
-        Assert.Equal(65_535, VariableRecordDescriptor.MicroFocus.MaxDataLength);
+        Assert.Equal(4_095, VariableRecordDescriptor.MicroFocus().MaxDataLength);
+        Assert.Equal(65_535, VariableRecordDescriptor.MicroFocus(65_535).MaxDataLength);
         Assert.Equal(4_294_967_295, VariableRecordDescriptor.Fujitsu.MaxDataLength);
 
         // When the stored length counts the framing, that framing comes out of

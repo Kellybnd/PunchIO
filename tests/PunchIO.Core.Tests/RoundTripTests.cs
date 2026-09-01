@@ -116,11 +116,12 @@ public sealed class RoundTripTests : IDisposable
         var path = NewPath();
 
         await WriteAsync(
-            path, new VariableRecordEncoder(VariableRecordDescriptor.MicroFocus),
+            path, new VariableRecordEncoder(VariableRecordDescriptor.MicroFocus()),
             records, blockSize, queueDepth);
 
         var actual = await ReadAsync(
-            path, new VariableRecordFramer(VariableRecordDescriptor.MicroFocus), blockSize, queueDepth);
+            path, new VariableRecordFramer(VariableRecordDescriptor.MicroFocus()),
+            blockSize, queueDepth);
 
         Assert.Equal(records.Count, actual.Count);
 
@@ -342,6 +343,100 @@ public sealed class RoundTripTests : IDisposable
         Assert.SkipUnless(
             BlockDeviceFactory.UseNativeFor(_directory),
             "The temp directory is not on a local fixed volume.");
+    }
+
+    // ---- Micro Focus, against an independent reading of the format ------
+
+    /// <summary>
+    /// Reads a Micro Focus file the way the published format description says to,
+    /// without going through the library: skip the 128-byte file header, then for
+    /// each record read a two-byte big-endian control field, check its top four
+    /// bits mark a user data record, take that many bytes, and step over the
+    /// padding to the next four-byte boundary.
+    /// </summary>
+    private static List<byte[]> ReadMicroFocusDirectly(string path)
+    {
+        var records = new List<byte[]>();
+
+        using var stream = File.OpenRead(path);
+        using var reader = new BinaryReader(stream);
+
+        stream.Position = 128;
+
+        while (stream.Position < stream.Length)
+        {
+            int control = (reader.ReadByte() << 8) | reader.ReadByte();
+
+            Assert.Equal(4, control >> 12);   // 0100: a user data record
+
+            int length = control & 0x0FFF;
+            byte[] data = reader.ReadBytes(length);
+
+            Assert.Equal(length, data.Length);
+            records.Add(data);
+
+            stream.Position += (4 - ((2 + length) % 4)) % 4;
+        }
+
+        return records;
+    }
+
+    [Fact]
+    public async Task WhatPunchIoWritesTheMicroFocusReferenceAlgorithmCanRead()
+    {
+        var records = RandomRecords(seed: 71, count: 200, minLength: 0, maxLength: 300);
+        var path = NewPath();
+
+        await WriteAsync(
+            path, new VariableRecordEncoder(VariableRecordDescriptor.MicroFocus()),
+            records, blockSize: 4096, queueDepth: 2);
+
+        var actual = ReadMicroFocusDirectly(path);
+
+        Assert.Equal(records.Count, actual.Count);
+
+        for (int i = 0; i < records.Count; i++)
+            Assert.True(records[i].AsSpan().SequenceEqual(actual[i]), $"record {i} differed");
+    }
+
+    [Fact]
+    public async Task AMicroFocusRecordIsPaddedToAFourByteBoundary()
+    {
+        // 2 bytes of control field plus 100 of data is 102, which rounds up to
+        // 104; with the 128-byte file header the file comes to 232.
+        var path = NewPath();
+
+        await WriteAsync(
+            path, new VariableRecordEncoder(VariableRecordDescriptor.MicroFocus()),
+            [new byte[100]], blockSize: 4096, queueDepth: 2);
+
+        Assert.Equal(128 + 104, new FileInfo(path).Length);
+
+        var bytes = await File.ReadAllBytesAsync(path, Ct);
+
+        // Status 4 over a length of 100 (x"064").
+        Assert.Equal(0x40, bytes[128]);
+        Assert.Equal(0x64, bytes[129]);
+    }
+
+    [Fact]
+    public async Task MicroFocusRecordsTooLongForAShortControlFieldUseTheLongOne()
+    {
+        var descriptor = VariableRecordDescriptor.MicroFocus(20_000);
+        var records = RandomRecords(seed: 5, count: 40, minLength: 4_000, maxLength: 9_000);
+        var path = NewPath();
+
+        await WriteAsync(
+            path, new VariableRecordEncoder(descriptor), records,
+            blockSize: 1 << 16, queueDepth: 3);
+
+        var actual = await ReadAsync(
+            path, new VariableRecordFramer(descriptor), blockSize: 1 << 16, queueDepth: 3);
+
+        Assert.Equal(records.Count, actual.Count);
+
+        for (int i = 0; i < records.Count; i++)
+            Assert.True(records[i].AsSpan().SequenceEqual(actual[i]), $"record {i} differed");
     }
 
     [Fact]

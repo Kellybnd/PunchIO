@@ -109,8 +109,8 @@ byte values rather than assuming ASCII.
 
 ### Variable length
 
-`VariableRecordDescriptor.Fujitsu` and `.MicroFocus` cover the two common
-layouts. Adjust any field with a `with` expression:
+`VariableRecordDescriptor.Fujitsu` and `VariableRecordDescriptor.MicroFocus()`
+cover the two common layouts. Adjust any field with a `with` expression:
 
 ```csharp
 var layout = VariableRecordDescriptor.Fujitsu with
@@ -123,10 +123,12 @@ await using var reader = RecordFile.OpenVariableRead("customers.dat", layout);
 
 | | Fujitsu | Micro Focus |
 |---|---|---|
-| Prefix | 4 bytes | 4 bytes |
-| Suffix | 4 bytes | none |
-| Length field | 4 bytes, little-endian | 2 bytes, big-endian |
-| Largest record | 4 GiB | 65,535 bytes |
+| File header | none | 128 bytes |
+| Record header | 4-byte length | 2- or 4-byte control field |
+| Suffix | 4-byte length | none |
+| Byte order | little-endian | big-endian |
+| Alignment | packed | 4 bytes |
+| Largest record | 4 GiB | 4,095 bytes, or 65,535 with a wide control field |
 
 A Fujitsu record on disk is a four-byte little-endian length, the record bytes,
 then the same length again, so `n` bytes of data occupy `n + 8`:
@@ -139,6 +141,28 @@ then the same length again, so `n` bytes of data occupy `n + 8`:
 The trailing length is checked against the leading one on every read, which
 catches corruption at record granularity. Disable it with
 `ValidateSuffix = false` if you would rather have the throughput.
+
+A Micro Focus file opens with a 128-byte header, and every record carries a
+control field packing a four-bit status over its length. Status `4` marks a user
+data record; the file header is itself a record with status `3`, and deleted
+records are `2`, so anything that is not user data is skipped on read. Records
+are padded out to the next four-byte boundary:
+
+```
+[ 128-byte file header ][ 40 50 ][ ....... record ....... ][ pad ]
+                         2 bytes          80 bytes          0-3
+```
+
+The control field is two bytes while the file's longest record is 4,095 bytes or
+fewer, and four bytes above that. The width is part of the on-disk layout rather
+than a detail the reader can infer per record, so declare it whenever the file
+holds records longer than that:
+
+```csharp
+var layout = VariableRecordDescriptor.MicroFocus(maxRecordLength: 8000);
+```
+
+A reader has to be given the same maximum the writer used.
 
 ### Relative files
 
@@ -325,28 +349,6 @@ dotnet run -c Release --project bench/PunchIO.Benchmarks -- --filter '*Framing*'
 Publishing the native EXFH library needs `vswhere.exe` on `PATH`
 (`C:\Program Files (x86)\Microsoft Visual Studio\Installer`). Without it the AOT
 compilation succeeds and the linker step fails with an unhelpful error.
-
-### Releasing
-
-Continuous integration builds and tests on Windows and Linux, in Debug and
-Release, and verifies that the native EXFH library still exports `EXTFH`.
-
-Publishing is driven by a tag:
-
-```bash
-git tag v1.0.1
-git push origin v1.0.1
-```
-
-That packs at the tagged version, pushes to NuGet, and opens a GitHub release
-with the packages attached.
-
-Publishing uses [trusted publishing][tp]: GitHub issues a signed token
-describing the repository and workflow, NuGet validates it against a policy
-configured on nuget.org, and returns a key valid for one hour and usable once.
-No publishing credential is stored in the repository.
-
-[tp]: https://learn.microsoft.com/en-us/nuget/nuget-org/trusted-publishing
 
 ### Layout
 

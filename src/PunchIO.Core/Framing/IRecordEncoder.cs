@@ -23,6 +23,12 @@ public interface IRecordEncoder
     /// <summary>The largest header <see cref="WriteHeader"/> can produce.</summary>
     int MaxHeaderLength { get; }
 
+    /// <summary>
+    /// The largest preamble <see cref="WriteFileHeader"/> can produce; zero for a
+    /// format whose first record starts at byte zero.
+    /// </summary>
+    int MaxFileHeaderLength { get; }
+
     /// <summary>The largest trailer <see cref="WriteTrailer"/> can produce.</summary>
     int MaxTrailerLength { get; }
 
@@ -66,6 +72,17 @@ public interface IRecordEncoder
     /// <param name="bodyLength">The body length that will follow, in bytes.</param>
     /// <returns>The number of bytes written.</returns>
     int WriteHeader(Span<byte> destination, int bodyLength);
+
+    /// <summary>
+    /// Writes the block of header information that precedes the first record.
+    /// Called once per file, before any record, and once even for a file that
+    /// ends up holding no records at all.
+    /// </summary>
+    /// <param name="destination">
+    /// A buffer at least <see cref="MaxFileHeaderLength"/> bytes long.
+    /// </param>
+    /// <returns>The number of bytes written; zero when the format has no preamble.</returns>
+    int WriteFileHeader(Span<byte> destination);
 
     /// <summary>Writes the bytes that follow the body, including any padding.</summary>
     /// <param name="destination">A buffer at least <see cref="MaxTrailerLength"/> bytes long.</param>

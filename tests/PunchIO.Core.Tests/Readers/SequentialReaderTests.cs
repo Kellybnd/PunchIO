@@ -196,7 +196,7 @@ public class SequentialReaderTests
     [Fact]
     public async Task ReadsMicroFocusVariableRecords()
     {
-        var descriptor = VariableRecordDescriptor.MicroFocus;
+        var descriptor = VariableRecordDescriptor.MicroFocus();
         var records = Enumerable.Range(0, 25).Select(i => Record(1 + (i * 5 % 43), i)).ToList();
 
         var output = new List<byte>();

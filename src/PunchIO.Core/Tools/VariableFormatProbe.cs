@@ -120,37 +120,43 @@ public static class VariableFormatProbe
                 LengthIncludes = LengthBasis.WithPrefixAndSuffix,
             }),
 
-        new("Micro Focus (4-byte header, 2-byte big-endian length)",
-            VariableRecordDescriptor.MicroFocus),
+        new("Micro Focus (128-byte file header, 2-byte control field)",
+            VariableRecordDescriptor.MicroFocus()),
 
-        new("Micro Focus, little-endian",
-            VariableRecordDescriptor.MicroFocus with { Endianness = Endianness.LittleEndian }),
+        new("Micro Focus, 4-byte control field (records over 4,095 bytes)",
+            VariableRecordDescriptor.MicroFocus(
+                MicroFocusFileHeader.MaxDeclarableRecordLength)),
 
-        new("Micro Focus, length includes the header",
-            VariableRecordDescriptor.MicroFocus with { LengthIncludes = LengthBasis.WithPrefix }),
+        new("2-byte big-endian prefix, no suffix", Plain(2, Endianness.BigEndian)),
 
-        new("Micro Focus, full 4-byte big-endian length",
-            VariableRecordDescriptor.MicroFocus with { LengthFieldWidth = 4, FlagByteOffset = -1 }),
+        new("2-byte little-endian prefix, no suffix", Plain(2, Endianness.LittleEndian)),
 
-        new("Micro Focus, full 4-byte little-endian length",
-            VariableRecordDescriptor.MicroFocus with
-            {
-                LengthFieldWidth = 4,
-                FlagByteOffset = -1,
-                Endianness = Endianness.LittleEndian,
-            }),
+        new("4-byte big-endian prefix, no suffix", Plain(4, Endianness.BigEndian)),
 
-        new("2-byte big-endian prefix, no suffix",
-            VariableRecordDescriptor.MicroFocus with { PrefixBytes = 2, FlagByteOffset = -1 }),
-
-        new("2-byte little-endian prefix, no suffix",
-            VariableRecordDescriptor.MicroFocus with
-            {
-                PrefixBytes = 2,
-                FlagByteOffset = -1,
-                Endianness = Endianness.LittleEndian,
-            }),
+        new("4-byte little-endian prefix, no suffix", Plain(4, Endianness.LittleEndian)),
     ];
+
+    /// <summary>
+    /// A bare length-prefixed layout: no suffix, no status bits, no file header
+    /// and no padding. These catch the many in-house formats that are simply a
+    /// length followed by its bytes.
+    /// </summary>
+    private static VariableRecordDescriptor Plain(int prefixBytes, Endianness endianness) => new()
+    {
+        PrefixBytes = prefixBytes,
+        SuffixBytes = 0,
+        LengthFieldOffset = 0,
+        LengthFieldWidth = prefixBytes,
+        StatusBits = 0,
+        DataRecordStatus = 0,
+        FlagByteOffset = -1,
+        Endianness = endianness,
+        LengthIncludes = LengthBasis.DataOnly,
+        ValidateSuffix = false,
+        ValidateReservedBytes = false,
+        Alignment = 1,
+        FileHeader = VariableFileHeader.None,
+    };
 
     /// <summary>Reads the front of a file and reports what each candidate made of it.</summary>
     /// <param name="path">The file to inspect.</param>
@@ -287,6 +293,14 @@ public static class VariableFormatProbe
             var status = framer.TryFrame(
                 sample[offset..], isFinalBlock: false,
                 out int consumed, out _, out int length);
+
+            if (status == FrameStatus.Skip)
+            {
+                // A file header or a deleted record: real structure, but not a
+                // record the caller would see, so it does not count as one.
+                offset += consumed;
+                continue;
+            }
 
             if (status == FrameStatus.Ok)
             {

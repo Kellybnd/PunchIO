@@ -13,12 +13,21 @@ public class VariableRecordFramerTests
         (byte)data.Length, (byte)(data.Length >> 8), 0, 0,
     ];
 
-    /// <summary>A Micro Focus record: two-byte big-endian length, flags, reserved, data.</summary>
-    private static byte[] MicroFocus(byte flags, params byte[] data) =>
-    [
-        (byte)(data.Length >> 8), (byte)data.Length, flags, 0,
-        .. data,
-    ];
+    /// <summary>
+    /// A Micro Focus record: a two-byte big-endian control field carrying the
+    /// record status in its top four bits over a twelve-bit length, then the
+    /// data, padded out to the next four-byte boundary.
+    /// </summary>
+    private static byte[] MicroFocus(int status, params byte[] data)
+    {
+        var buffer = new byte[(2 + data.Length + 3) & ~3];
+
+        buffer[0] = (byte)((status << 4) | (data.Length >> 8));
+        buffer[1] = (byte)data.Length;
+        data.CopyTo(buffer, 2);
+
+        return buffer;
+    }
 
     [Fact]
     public void FramesAFujitsuRecordAndReportsOnlyTheData()
@@ -37,27 +46,82 @@ public class VariableRecordFramerTests
     [Fact]
     public void FramesAMicroFocusRecord()
     {
-        var framer = new VariableRecordFramer(VariableRecordDescriptor.MicroFocus);
+        var framer = new VariableRecordFramer(VariableRecordDescriptor.MicroFocus());
 
-        var status = framer.TryFrame(MicroFocus(flags: 0, 9, 8, 7), isFinalBlock: false,
+        var status = framer.TryFrame(MicroFocus(status: 4, 9, 8, 7), isFinalBlock: false,
             out int consumed, out int start, out int length);
 
         Assert.Equal(FrameStatus.Ok, status);
-        Assert.Equal(7, consumed);    // 4 header + 3 data
-        Assert.Equal(4, start);
+        Assert.Equal(8, consumed);    // 2 control + 3 data + 3 padding
+        Assert.Equal(2, start);
         Assert.Equal(3, length);
     }
 
     [Fact]
-    public void IgnoresTheMicroFocusFlagByteByDefault()
+    public void AnEightyByteMicroFocusRecordBeginsWith4050()
     {
-        var framer = new VariableRecordFramer(VariableRecordDescriptor.MicroFocus);
+        // The documented example: status 4 over a length of x"050".
+        var record = MicroFocus(status: 4, new byte[80]);
 
-        var status = framer.TryFrame(MicroFocus(flags: 0x40, 1, 2), isFinalBlock: false,
-            out _, out _, out int length);
+        Assert.Equal(0x40, record[0]);
+        Assert.Equal(0x50, record[1]);
 
-        Assert.Equal(FrameStatus.Ok, status);
-        Assert.Equal(2, length);
+        var framer = new VariableRecordFramer(VariableRecordDescriptor.MicroFocus());
+
+        Assert.Equal(
+            FrameStatus.Ok,
+            framer.TryFrame(record, false, out int consumed, out _, out int length));
+
+        Assert.Equal(80, length);
+        Assert.Equal(82 + 2, consumed);   // 2 control + 80 data, padded to 84
+    }
+
+    [Theory]
+    [InlineData(2)]   // deleted
+    [InlineData(3)]   // a system record, which is what the file header is
+    [InlineData(6)]   // a pointer record
+    public void SkipsAnyRecordThatIsNotUserData(int status)
+    {
+        var framer = new VariableRecordFramer(VariableRecordDescriptor.MicroFocus());
+
+        var result = framer.TryFrame(MicroFocus(status, 1, 2, 3), isFinalBlock: false,
+            out int consumed, out _, out int length);
+
+        Assert.Equal(FrameStatus.Skip, result);
+        Assert.Equal(8, consumed);   // consumed in full, so framing continues after it
+        Assert.Equal(0, length);
+    }
+
+    [Fact]
+    public void SkipsTheStandardFileHeaderWholeAndInOnePiece()
+    {
+        // The header is itself a record: a system record whose control field and
+        // data together come to exactly 128 bytes.
+        var framer = new VariableRecordFramer(VariableRecordDescriptor.MicroFocus());
+        var header = new byte[MicroFocusFileHeader.Length];
+
+        MicroFocusFileHeader.Write(header, VariableRecordDescriptor.MicroFocus());
+
+        Assert.Equal(0x30, header[0]);
+        Assert.Equal(0x7E, header[1]);
+
+        Assert.Equal(
+            FrameStatus.Skip,
+            framer.TryFrame(header, isFinalBlock: false, out int consumed, out _, out _));
+
+        Assert.Equal(MicroFocusFileHeader.Length, consumed);
+    }
+
+    [Fact]
+    public void TheLongFileHeaderCarriesTheDocumentedBytes()
+    {
+        var header = new byte[MicroFocusFileHeader.Length];
+
+        MicroFocusFileHeader.Write(header, VariableRecordDescriptor.MicroFocus(65_535));
+
+        // x"3000007C": a system record of 124 bytes, which with its four-byte
+        // control field is again 128.
+        Assert.Equal<byte[]>([0x30, 0x00, 0x00, 0x7C], header[..4]);
     }
 
     [Fact]
@@ -206,9 +270,23 @@ public class VariableRecordFramerTests
     [Fact]
     public void ValidatesReservedPrefixBytesWhenAsked()
     {
-        var descriptor = VariableRecordDescriptor.MicroFocus with { ValidateReservedBytes = true };
+        // A four-byte prefix carrying a two-byte length, a flag byte, and one
+        // byte that must stay zero.
+        var descriptor = new VariableRecordDescriptor
+        {
+            PrefixBytes = 4,
+            SuffixBytes = 0,
+            LengthFieldOffset = 0,
+            LengthFieldWidth = 2,
+            FlagByteOffset = 2,
+            Endianness = Endianness.BigEndian,
+            LengthIncludes = LengthBasis.DataOnly,
+            Alignment = 1,
+            ValidateReservedBytes = true,
+        };
+
         var framer = new VariableRecordFramer(descriptor);
-        var input = MicroFocus(flags: 0x40, 1, 2);
+        byte[] input = [0, 2, 0x40, 0, 1, 2];
 
         Assert.Equal(FrameStatus.Ok, framer.TryFrame(input, false, out _, out _, out _));
 
@@ -244,14 +322,16 @@ public class VariableRecordFramerTests
     [Fact]
     public void MicroFocusFramingRoundTripsThroughTheWriter()
     {
-        var descriptor = VariableRecordDescriptor.MicroFocus;
+        var descriptor = VariableRecordDescriptor.MicroFocus();
         byte[] data = [4, 5, 6, 7];
 
         var buffer = new byte[VariableRecordFramer.FramedLength(data.Length, descriptor)];
         VariableRecordFramer.WriteFraming(buffer, data.Length, descriptor);
         data.CopyTo(buffer, descriptor.PrefixBytes);
 
-        Assert.Equal(8, buffer.Length);   // 4 header + 4 data, no suffix
+        Assert.Equal(8, buffer.Length);   // 2 control + 4 data + 2 padding
+        Assert.Equal(0x40, buffer[0]);    // status 4 over a length of 4
+        Assert.Equal(0x04, buffer[1]);
 
         var status = new VariableRecordFramer(descriptor).TryFrame(buffer, isFinalBlock: true,
             out int consumed, out int start, out int length);

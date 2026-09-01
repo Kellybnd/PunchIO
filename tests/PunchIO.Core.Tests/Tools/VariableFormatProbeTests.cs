@@ -55,11 +55,27 @@ public sealed class VariableFormatProbeTests : IDisposable
     [Fact]
     public void IdentifiesAMicroFocusFile()
     {
-        var results = VariableFormatProbe.Probe(Build(VariableRecordDescriptor.MicroFocus));
+        var results = VariableFormatProbe.Probe(Build(VariableRecordDescriptor.MicroFocus()));
         var best = Best(results);
 
         Assert.Equal(ProbeConfidence.High, best.Confidence);
-        Assert.Equal(VariableRecordDescriptor.MicroFocus, best.Descriptor);
+        Assert.Equal(VariableRecordDescriptor.MicroFocus(), best.Descriptor);
+    }
+
+    [Fact]
+    public void IdentifiesAMicroFocusFileCompleteWithItsHeader()
+    {
+        // The shape a real file has: the 128-byte header, then the records.
+        var descriptor = VariableRecordDescriptor.MicroFocus();
+        var header = new byte[MicroFocusFileHeader.Length];
+
+        MicroFocusFileHeader.Write(header, descriptor);
+
+        byte[] file = [.. header, .. Build(descriptor)];
+        var best = Best(VariableFormatProbe.Probe(file));
+
+        Assert.Equal(ProbeConfidence.High, best.Confidence);
+        Assert.Equal(descriptor, best.Descriptor);
     }
 
     [Fact]

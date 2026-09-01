@@ -14,4 +14,11 @@ public enum FrameStatus
 
     /// <summary>The bytes are malformed for the configured format.</summary>
     Invalid,
+
+    /// <summary>
+    /// A well-formed block of bytes that is not a caller-visible record: a file
+    /// header, a deleted record, or one the runtime keeps for itself. The bytes
+    /// are consumed and framing continues.
+    /// </summary>
+    Skip,
 }

@@ -94,6 +94,7 @@
     FrameStatus Invalid
     FrameStatus NeedMoreData
     FrameStatus Ok
+    FrameStatus Skip
     FrameStatus TryFrame(ReadOnlySpan<Byte> input, Boolean isFinalBlock, Int32 consumed, Int32 recordStart, Int32 recordLength)
     FrameStatus TryFrame(ReadOnlySpan<Byte> input, Boolean isFinalBlock, Int32 consumed, Int32 recordStart, Int32 recordLength)
     FrameStatus TryFrame(ReadOnlySpan<Byte> input, Boolean isFinalBlock, Int32 consumed, Int32 recordStart, Int32 recordLength)
@@ -130,9 +131,12 @@
     Int32 BodyLength(ReadOnlySpan<Byte> record)
     Int32 BodyLength(ReadOnlySpan<Byte> record)
     Int32 BodyLength(ReadOnlySpan<Byte> record)
+    Int32 DataRecordStatus { get; set; }
     Int32 DefaultMaxRecords
     Int32 DefaultSampleBytes
+    Int32 DeletedRecord
     Int32 DistinctRecordLengths { get; set; }
+    Int32 FileHeaderLength { get; }
     Int32 FlagByteOffset { get; set; }
     Int32 FramedLength(Int32 dataLength, VariableRecordDescriptor descriptor)
     Int32 GetHashCode()
@@ -140,17 +144,25 @@
     Int32 GetHashCode()
     Int32 GetHashCode()
     Int32 GetHashCode()
+    Int32 Length
+    Int32 LengthBits { get; }
     Int32 LengthFieldOffset { get; set; }
     Int32 LengthFieldWidth { get; set; }
     Int32 MaxBodyLength(Int32 recordLength)
     Int32 MaxBodyLength(Int32 recordLength)
     Int32 MaxBodyLength(Int32 recordLength)
     Int32 MaxBodyLength(Int32 recordLength)
+    Int32 MaxDeclarableRecordLength
     Int32 MaxExpansion(Int32 sourceLength)
+    Int32 MaxFileHeaderLength { get; }
+    Int32 MaxFileHeaderLength { get; }
+    Int32 MaxFileHeaderLength { get; }
+    Int32 MaxFileHeaderLength { get; }
     Int32 MaxHeaderLength { get; }
     Int32 MaxHeaderLength { get; }
     Int32 MaxHeaderLength { get; }
     Int32 MaxHeaderLength { get; }
+    Int32 MaxRecordLength { get; set; }
     Int32 MaxRecordLength { get; set; }
     Int32 MaxRecordLength { get; }
     Int32 MaxRecordLength { get; }
@@ -158,6 +170,8 @@
     Int32 MaxTrailerLength { get; }
     Int32 MaxTrailerLength { get; }
     Int32 MaxTrailerLength { get; }
+    Int32 MicroFocusShortHeaderLimit
+    Int32 MinRecordLength { get; set; }
     Int32 MinimumLookahead { get; }
     Int32 MinimumLookahead { get; }
     Int32 MinimumLookahead { get; }
@@ -173,12 +187,20 @@
     Int32 ResolveBlockSize(Int32 alignment, Nullable<Int32> recordLength)
     Int32 SlotHeaderLength { get; set; }
     Int32 SlotSize { get; }
+    Int32 StatusBits { get; set; }
     Int32 SuffixBytes { get; set; }
+    Int32 SystemRecord
     Int32 TabStopWidth { get; set; }
+    Int32 UserDataRecord
+    Int32 Write(Span<Byte> destination, VariableRecordDescriptor descriptor)
     Int32 WriteBody(ReadOnlySpan<Byte> record, Span<Byte> destination)
     Int32 WriteBody(ReadOnlySpan<Byte> record, Span<Byte> destination)
     Int32 WriteBody(ReadOnlySpan<Byte> record, Span<Byte> destination)
     Int32 WriteBody(ReadOnlySpan<Byte> record, Span<Byte> destination)
+    Int32 WriteFileHeader(Span<Byte> destination)
+    Int32 WriteFileHeader(Span<Byte> destination)
+    Int32 WriteFileHeader(Span<Byte> destination)
+    Int32 WriteFileHeader(Span<Byte> destination)
     Int32 WriteFraming(Span<Byte> destination, Int32 dataLength, VariableRecordDescriptor descriptor)
     Int32 WriteHeader(Span<Byte> destination, Int32 bodyLength)
     Int32 WriteHeader(Span<Byte> destination, Int32 bodyLength)
@@ -191,6 +213,7 @@
     Int32 WriteTrailer(Span<Byte> destination, Int32 bodyLength)
     Int32 WriteTrailer(Span<Byte> destination, Int32 bodyLength)
     Int32 ZeroLengthRecords { get; set; }
+    Int32 value__
     Int32 value__
     Int32 value__
     Int32 value__
@@ -325,6 +348,9 @@
     ValueTask<Int32> ReadAsync(Memory<Byte> destination, Int64 fileOffset, CancellationToken cancellationToken)
     ValueTask<Int32> ReadAsync(Memory<Byte> destination, Int64 offset, CancellationToken cancellationToken = default)
     ValueTask<ReadOnlyMemory<Byte>> NextBlockAsync(CancellationToken cancellationToken = default)
+    VariableFileHeader FileHeader { get; set; }
+    VariableFileHeader MicroFocusStandard
+    VariableFileHeader None
     VariableFormatCandidate <Clone>$()
     VariableFormatProbeResult <Clone>$()
     VariableFormatProbeResult Evaluate(ReadOnlySpan<Byte> sample, VariableFormatCandidate candidate, Int32 maxRecords)
@@ -333,7 +359,7 @@
     VariableRecordDescriptor Descriptor { get; }
     VariableRecordDescriptor Descriptor { get; }
     VariableRecordDescriptor Fujitsu { get; }
-    VariableRecordDescriptor MicroFocus { get; }
+    VariableRecordDescriptor MicroFocus(Int32 maxRecordLength = default, Int32 minRecordLength = default)
     VariableRecordDescriptor Variable { get; set; }
     Void Deconstruct(Int64 RecordNumber, ReadOnlyMemory`1 Record)
     Void Deconstruct(String Name, VariableRecordDescriptor Descriptor)
@@ -358,6 +384,7 @@ class PunchIO.Files.RandomAccessFile
 class PunchIO.Files.RelativeFile
 class PunchIO.Files.RelativeFileOptions
 class PunchIO.Framing.LineSequentialOptions
+class PunchIO.Framing.MicroFocusFileHeader
 class PunchIO.Pump.BlockSink
 class PunchIO.Pump.BlockSource
 class PunchIO.PunchIoException
@@ -376,6 +403,7 @@ enum PunchIO.Framing.FrameStatus
 enum PunchIO.Framing.LengthBasis
 enum PunchIO.Framing.LineTerminator
 enum PunchIO.Framing.TrailingPartialRecord
+enum PunchIO.Framing.VariableFileHeader
 enum PunchIO.RecordFormat
 enum PunchIO.Tools.ProbeConfidence
 interface PunchIO.Buffers.IBlockSlab

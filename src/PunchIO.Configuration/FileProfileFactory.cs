@@ -164,7 +164,7 @@ public static class FileProfileFactory
             var p when p.Equals("Fujitsu", StringComparison.OrdinalIgnoreCase) =>
                 VariableRecordDescriptor.Fujitsu,
             var p when p.Equals("MicroFocus", StringComparison.OrdinalIgnoreCase) =>
-                VariableRecordDescriptor.MicroFocus,
+                MicroFocusSeed(name, configuration.Variable),
             var p => throw new FileProfileException(
                 name, "Preset", $"'{p}' is not a variable-record preset; use Fujitsu or MicroFocus."),
         };
@@ -191,6 +191,13 @@ public static class FileProfileFactory
             ValidateSuffix = v?.ValidateSuffix ?? seed.ValidateSuffix,
             ValidateReservedBytes = v?.ValidateReservedBytes ?? seed.ValidateReservedBytes,
             Alignment = v?.Alignment ?? seed.Alignment,
+            StatusBits = v?.StatusBits ?? seed.StatusBits,
+            DataRecordStatus = v?.DataRecordStatus ?? seed.DataRecordStatus,
+            FileHeader =
+                ParseEnum<VariableFileHeader>(name, "Variable:FileHeader", v?.FileHeader)
+                ?? seed.FileHeader,
+            MaxRecordLength = v?.MaxRecordLength ?? seed.MaxRecordLength,
+            MinRecordLength = v?.MinRecordLength ?? seed.MinRecordLength,
         };
 
         try
@@ -203,6 +210,25 @@ public static class FileProfileFactory
         }
 
         return descriptor;
+    }
+
+    /// <summary>
+    /// Builds the Micro Focus seed from the declared record lengths, which decide
+    /// the control field's width and so cannot be applied as a later override.
+    /// </summary>
+    private static VariableRecordDescriptor MicroFocusSeed(
+        string name, VariableConfiguration? v)
+    {
+        try
+        {
+            return VariableRecordDescriptor.MicroFocus(
+                v?.MaxRecordLength ?? VariableRecordDescriptor.MicroFocusShortHeaderLimit,
+                v?.MinRecordLength ?? 0);
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            throw new FileProfileException(name, "Variable:MaxRecordLength", ex.Message, ex);
+        }
     }
 
     private static long Size(string name, string key, string? text, long fallback)

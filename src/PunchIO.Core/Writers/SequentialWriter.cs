@@ -27,13 +27,18 @@ public sealed class SequentialWriter<TEncoder> : IRecordWriter
 
     private byte[] _scratch = [];
     private long _recordNumber;
+    private bool _fileHeaderWritten;
     private bool _disposed;
 
     private SequentialWriter(BlockSink sink, TEncoder encoder)
     {
         _sink = sink;
         _encoder = encoder;
-        _framing = new byte[Math.Max(1, Math.Max(encoder.MaxHeaderLength, encoder.MaxTrailerLength))];
+        _framing = new byte[Math.Max(
+            1,
+            Math.Max(
+                encoder.MaxFileHeaderLength,
+                Math.Max(encoder.MaxHeaderLength, encoder.MaxTrailerLength)))];
     }
 
     /// <summary>Creates a writer over a block sink.</summary>
@@ -63,6 +68,8 @@ public sealed class SequentialWriter<TEncoder> : IRecordWriter
         ReadOnlyMemory<byte> record, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+
+        await EnsureFileHeaderAsync(cancellationToken).ConfigureAwait(false);
 
         ReadOnlyMemory<byte> body;
 
@@ -103,21 +110,44 @@ public sealed class SequentialWriter<TEncoder> : IRecordWriter
     /// here; writing it early would leave the next write offset unaligned on an
     /// unbuffered device.
     /// </remarks>
-    public ValueTask FlushAsync(bool toDisk = false, CancellationToken cancellationToken = default)
+    public async ValueTask FlushAsync(
+        bool toDisk = false, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        return _sink.FlushAsync(toDisk, cancellationToken);
+        await EnsureFileHeaderAsync(cancellationToken).ConfigureAwait(false);
+        await _sink.FlushAsync(toDisk, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Writes the final partial block and finishes the file.</summary>
     /// <param name="cancellationToken">Cancels the final write.</param>
     /// <returns>A task that completes once the file is whole on disk.</returns>
-    public ValueTask CompleteAsync(CancellationToken cancellationToken = default)
+    public async ValueTask CompleteAsync(CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        return _sink.CompleteAsync(cancellationToken);
+        // Even a file that never received a record still gets its header, so an
+        // empty Micro Focus file is a valid one rather than a zero-byte stub.
+        await EnsureFileHeaderAsync(cancellationToken).ConfigureAwait(false);
+        await _sink.CompleteAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Writes the file header, once, before any record reaches the sink.</summary>
+    private async ValueTask EnsureFileHeaderAsync(CancellationToken cancellationToken)
+    {
+        if (_fileHeaderWritten) return;
+
+        _fileHeaderWritten = true;
+
+        if (_encoder.MaxFileHeaderLength == 0) return;
+
+        int written = _encoder.WriteFileHeader(_framing);
+
+        if (written > 0)
+        {
+            await _sink.WriteAsync(_framing.AsMemory(0, written), cancellationToken)
+                .ConfigureAwait(false);
+        }
     }
 
     private void EnsureScratch(int required)

@@ -144,6 +144,11 @@ public sealed class SequentialReader<TFramer> : IRecordReader
                     Complete();
                     return false;
 
+                case FrameStatus.Skip:
+                    // A file header, or a record the runtime keeps to itself. The
+                    // framing call consumed it; go looking for the next one.
+                    continue;
+
                 case FrameStatus.Invalid:
                     throw new RecordFormatException(
                         "The bytes here do not form a valid record for the configured format",
@@ -191,6 +196,12 @@ public sealed class SequentialReader<TFramer> : IRecordReader
             _current.Span[_position..], _final,
             out int consumed, out int recordStart, out int recordLength);
 
+        if (status == FrameStatus.Skip)
+        {
+            _position += consumed;
+            return status;
+        }
+
         if (status != FrameStatus.Ok) return status;
 
         CheckRecordLength(recordLength);
@@ -209,6 +220,13 @@ public sealed class SequentialReader<TFramer> : IRecordReader
         var status = _framer.TryFrame(
             _stitch.AsSpan(0, _stitchLength), _final,
             out int consumed, out int recordStart, out int recordLength);
+
+        if (status == FrameStatus.Skip)
+        {
+            _position = _position - _stitchLength + consumed;
+            _stitchLength = 0;
+            return status;
+        }
 
         if (status != FrameStatus.Ok) return status;
 

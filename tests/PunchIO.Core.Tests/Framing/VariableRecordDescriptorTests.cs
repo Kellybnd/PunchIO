@@ -6,18 +6,56 @@ namespace PunchIO.Core.Tests.Framing;
 public class VariableRecordDescriptorTests
 {
     [Fact]
-    public void MicroFocusPresetMatchesTheSpecifiedLayout()
+    public void MicroFocusPresetMatchesTheDocumentedLayout()
     {
-        var d = VariableRecordDescriptor.MicroFocus;
+        var d = VariableRecordDescriptor.MicroFocus();
 
-        Assert.Equal(4, d.PrefixBytes);          // four-byte record header
+        Assert.Equal(2, d.PrefixBytes);          // two bytes below 4096
         Assert.Equal(0, d.SuffixBytes);          // no suffix
-        Assert.Equal(0, d.LengthFieldOffset);    // length in bytes 0-1
+        Assert.Equal(0, d.LengthFieldOffset);
         Assert.Equal(2, d.LengthFieldWidth);
-        Assert.Equal(2, d.FlagByteOffset);       // byte 2 carries flags
+        Assert.Equal(4, d.StatusBits);           // top four bits are the status
+        Assert.Equal(4, d.DataRecordStatus);     // 0100 = user data record
+        Assert.Equal(12, d.LengthBits);          // the rest is the length
+        Assert.Equal(-1, d.FlagByteOffset);      // no separate flag byte
         Assert.Equal(Endianness.BigEndian, d.Endianness);
         Assert.Equal(LengthBasis.DataOnly, d.LengthIncludes);
-        Assert.Equal(1, d.Alignment);
+        Assert.Equal(4, d.Alignment);            // records start on 4-byte boundaries
+        Assert.Equal(VariableFileHeader.MicroFocusStandard, d.FileHeader);
+        Assert.Equal(128, d.FileHeaderLength);
+        Assert.Equal(4095, d.MaxDataLength);
+    }
+
+    [Theory]
+    [InlineData(80, 2)]
+    [InlineData(4095, 2)]     // the largest a twelve-bit length can describe
+    [InlineData(4096, 4)]     // one byte more and the field has to widen
+    [InlineData(65535, 4)]
+    public void MicroFocusWidensTheControlFieldForLongRecords(int maxRecordLength, int expected)
+    {
+        var d = VariableRecordDescriptor.MicroFocus(maxRecordLength);
+
+        Assert.Equal(expected, d.PrefixBytes);
+        Assert.Equal(expected, d.LengthFieldWidth);
+        Assert.Equal(maxRecordLength, d.MaxDataLength);
+    }
+
+    [Fact]
+    public void MicroFocusRejectsAMaximumItsHeaderCannotRecord()
+    {
+        // The header keeps the maximum record length in two bytes.
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => VariableRecordDescriptor.MicroFocus(65_536));
+    }
+
+    [Fact]
+    public void RejectsADeclaredMaximumTheLengthFieldCannotDescribe()
+    {
+        // A file whose header promises 9,000-byte records but whose control
+        // field has only twelve bits could never frame them.
+        var d = VariableRecordDescriptor.MicroFocus() with { MaxRecordLength = 9_000 };
+
+        Assert.Throws<ArgumentException>(d.Validate);
     }
 
     [Fact]
@@ -51,7 +89,8 @@ public class VariableRecordDescriptorTests
     [Fact]
     public void PresetsValidateCleanly()
     {
-        VariableRecordDescriptor.MicroFocus.Validate();
+        VariableRecordDescriptor.MicroFocus().Validate();
+        VariableRecordDescriptor.MicroFocus(65_535).Validate();
         VariableRecordDescriptor.Fujitsu.Validate();
     }
 
@@ -79,7 +118,7 @@ public class VariableRecordDescriptorTests
     [Fact]
     public void RejectsSuffixValidationWhenThereIsNoSuffix()
     {
-        var d = VariableRecordDescriptor.MicroFocus with { ValidateSuffix = true };
+        var d = VariableRecordDescriptor.MicroFocus() with { ValidateSuffix = true };
 
         Assert.Throws<ArgumentException>(d.Validate);
     }

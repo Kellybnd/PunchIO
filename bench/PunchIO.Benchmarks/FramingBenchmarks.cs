@@ -37,12 +37,12 @@ public class FramingBenchmarks
         _fixedFramer = new FixedBlockFramer(RecordLength);
         _lineFramer = new LineSequentialFramer(new LineSequentialOptions());
         _fujitsuFramer = new VariableRecordFramer(VariableRecordDescriptor.Fujitsu);
-        _microFocusFramer = new VariableRecordFramer(VariableRecordDescriptor.MicroFocus);
+        _microFocusFramer = new VariableRecordFramer(VariableRecordDescriptor.MicroFocus());
 
         _fixedBlock = Repeat(body, Records);
         _lineSequential = Repeat([.. body, (byte)'\n'], Records);
         _fujitsu = RepeatFramed(body, Records, VariableRecordDescriptor.Fujitsu);
-        _microFocus = RepeatFramed(body, Records, VariableRecordDescriptor.MicroFocus);
+        _microFocus = RepeatFramed(body, Records, VariableRecordDescriptor.MicroFocus());
     }
 
     [Benchmark(OperationsPerInvoke = Records, Baseline = true)]

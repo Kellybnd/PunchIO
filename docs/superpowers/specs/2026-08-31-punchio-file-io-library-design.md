@@ -401,17 +401,43 @@ public readonly struct VariableRecordDescriptor
     public int  LengthFieldOffset { get; init; }  // within the prefix
     public int  LengthFieldWidth  { get; init; }  // bytes of actual length
 
-    public static VariableRecordDescriptor MicroFocus { get; }
-    public static VariableRecordDescriptor Fujitsu    { get; }
+    public int  StatusBits       { get; init; }  // high bits carrying a status
+    public int  DataRecordStatus { get; init; }
+    public VariableFileHeader FileHeader { get; init; }
+    public int  MaxRecordLength  { get; init; }
+    public int  MinRecordLength  { get; init; }
+
+    public static VariableRecordDescriptor MicroFocus(
+        int maxRecordLength = 4095, int minRecordLength = 0);
+    public static VariableRecordDescriptor Fujitsu { get; }
 }
 ```
 
 #### Presets
 
-| | Prefix | Suffix | Length field | Endian | Length basis | Alignment |
-|---|---|---|---|---|---|---|
-| **MicroFocus** | 4 bytes | none | bytes 0-1 (byte 2 flags, byte 3 zero) | big-endian | `DataOnly` | packed |
-| **Fujitsu** | 4 bytes | 4 bytes | full 4 bytes | little-endian | `DataOnly` | packed |
+| | File header | Prefix | Suffix | Length field | Endian | Length basis | Alignment |
+|---|---|---|---|---|---|---|---|
+| **MicroFocus** | 128 bytes | 2 or 4 bytes | none | 4 status bits over 12 or 28 length bits | big-endian | `DataOnly` | 4 bytes |
+| **Fujitsu** | none | 4 bytes | 4 bytes | full 4 bytes | little-endian | `DataOnly` | packed |
+
+**Micro Focus layout.** A file of variable-length records opens with a 128-byte
+header, which is itself the file's first record: a system record whose control
+field carries status `3` over a length of 126 (short control field) or 124
+(long), so that field plus data comes to exactly 128 either way. The documented
+first four bytes are `x"307E0000"` and `x"3000007C"` respectively.
+
+Each record that follows carries a control field whose top four bits are its
+status — `4` for a user data record, `3` system, `2` deleted — over its length.
+An 80-byte record therefore begins `x"4050"`. The field is 2 bytes while the
+file's maximum record length is under 4,096 and 4 bytes otherwise, which is why
+`MicroFocus` takes that maximum as a parameter: it is not inferable per record,
+and a reader must be given the same value the writer used. Records are padded
+out to the next four-byte boundary, and the padding is not counted in the
+length.
+
+Records whose status is not `DataRecordStatus` are skipped rather than returned,
+which is what makes the file header and any deleted records invisible to a
+caller without any special-casing in the reader.
 
 **Fujitsu length field.** The length in both the prefix and the suffix is the
 length of the data returned to the caller. It excludes the 8 bytes of framing,
@@ -824,14 +850,15 @@ implement, and which declaration to change for a variant.
 | Layout aspect | Shipped default | Adaptation point |
 |---|---|---|
 | Fujitsu record framing | 4-byte prefix and 4-byte suffix, little-endian, length counts data only | `VariableRecordDescriptor.Fujitsu` |
-| Micro Focus record framing | 4-byte header, big-endian length in bytes 0–1, flags in byte 2 | `VariableRecordDescriptor.MicroFocus` |
+| Micro Focus record framing | 128-byte file header; 2- or 4-byte control field, big-endian, 4 status bits over the length; 4-byte alignment | `VariableRecordDescriptor.MicroFocus(int, int)` |
 | Length byte order | Big-endian | `Endianness` |
 | What the length counts | Data only | `LengthIncludes` |
-| Micro Focus header flag and reserved bytes | Byte 2 flags ignored, byte 3 reserved | `FlagByteOffset`, `ValidateReservedBytes` |
-| Record alignment | Packed, no padding | `Alignment` |
+| Record status bits | Top 4 bits of the control field, `4` meaning user data | `StatusBits`, `DataRecordStatus` |
+| File header | 128 bytes for Micro Focus, none for Fujitsu | `FileHeader`, `MicroFocusFileHeader` |
+| Record alignment | 4 bytes for Micro Focus, packed for Fujitsu | `Alignment` |
 | Relative-file slot header | None. A header is required for deletion to be representable | `RelativeFileOptions.SlotHeaderLength`, `PresentMarker` |
 | Line-sequential null escaping | Off. Enabled by the `MicroFocus` profile preset | `LineSequentialOptions.NullEscape` |
-| Largest record | 65,535 bytes for Micro Focus (2-byte length field); 4 GiB for Fujitsu | `LengthFieldWidth` |
+| Largest record | 4,095 bytes for Micro Focus with a short control field, 65,535 with a wide one; 4 GiB for Fujitsu | `LengthFieldWidth`, `MaxRecordLength` |
 | FCD field offsets | FCD2 and FCD3 layouts | `FcdLayout` |
 | EXTFH operation codes | Micro Focus opcode set | `ExfhOpcodes` |
 

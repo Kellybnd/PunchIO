@@ -36,6 +36,12 @@ public readonly struct FixedBlockEncoder : IRecordEncoder
     public int MaxTrailerLength => _recordLength;
 
     /// <inheritdoc />
+    public int MaxFileHeaderLength => 0;
+
+    /// <inheritdoc />
+    public int WriteFileHeader(Span<byte> destination) => 0;
+
+    /// <inheritdoc />
     public bool RewritesBody => false;
 
     /// <inheritdoc />
@@ -112,6 +118,12 @@ public readonly struct LineSequentialEncoder : IRecordEncoder
 
     /// <inheritdoc />
     public int MaxTrailerLength => 2;
+
+    /// <inheritdoc />
+    public int MaxFileHeaderLength => 0;
+
+    /// <inheritdoc />
+    public int WriteFileHeader(Span<byte> destination) => 0;
 
     /// <inheritdoc />
     /// <remarks>
@@ -200,6 +212,18 @@ public readonly struct VariableRecordEncoder : IRecordEncoder
 
     /// <inheritdoc />
     public int MaxTrailerLength => _descriptor.SuffixBytes + _descriptor.Alignment;
+
+    /// <inheritdoc />
+    public int MaxFileHeaderLength => _descriptor.FileHeaderLength;
+
+    /// <inheritdoc />
+    /// <exception cref="ArgumentException">
+    /// The layout declares a record length the header cannot represent.
+    /// </exception>
+    public int WriteFileHeader(Span<byte> destination) =>
+        _descriptor.FileHeader == VariableFileHeader.MicroFocusStandard
+            ? MicroFocusFileHeader.Write(destination, _descriptor)
+            : 0;
 
     /// <inheritdoc />
     public bool RewritesBody => false;

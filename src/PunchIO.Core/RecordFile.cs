@@ -116,7 +116,7 @@ public static class RecordFile
     /// <param name="path">The file to read.</param>
     /// <param name="descriptor">
     /// The on-disk layout. Use <see cref="VariableRecordDescriptor.Fujitsu"/> or
-    /// <see cref="VariableRecordDescriptor.MicroFocus"/>, optionally customised
+    /// <see cref="VariableRecordDescriptor.MicroFocus(int, int)"/>, optionally customised
     /// with a <c>with</c> expression.
     /// </param>
     /// <param name="options">I/O options, or <see langword="null"/> for the defaults.</param>

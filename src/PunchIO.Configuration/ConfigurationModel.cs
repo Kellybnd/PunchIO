@@ -138,4 +138,27 @@ public sealed class VariableConfiguration
 
     /// <summary>The byte boundary each record is padded up to.</summary>
     public int? Alignment { get; set; }
+
+    /// <summary>
+    /// Number of high-order bits of the length field that carry a record status
+    /// rather than length. Micro Focus uses four; most formats use none.
+    /// </summary>
+    public int? StatusBits { get; set; }
+
+    /// <summary>The status value marking a record as user data.</summary>
+    public int? DataRecordStatus { get; set; }
+
+    /// <summary><c>None</c> or <c>MicroFocusStandard</c>.</summary>
+    public string? FileHeader { get; set; }
+
+    /// <summary>
+    /// The longest record the file declares, which for Micro Focus also decides
+    /// whether the control field is two bytes or four. This is the length written
+    /// into the file header, not the profile-level <c>MaxRecordLength</c>, which
+    /// caps how much the reader will buffer.
+    /// </summary>
+    public int? MaxRecordLength { get; set; }
+
+    /// <summary>The shortest record the file declares.</summary>
+    public int? MinRecordLength { get; set; }
 }

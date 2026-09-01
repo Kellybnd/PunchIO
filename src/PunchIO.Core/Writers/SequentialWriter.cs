@@ -163,6 +163,11 @@ public sealed class SequentialWriter<TEncoder> : IRecordWriter
     {
         if (_disposed) return;
 
+        // Before the sink, not after: disposing it finishes the file, and a
+        // format with a header needs that header in it even when the caller
+        // wrote no records and never called CompleteAsync.
+        await EnsureFileHeaderAsync(CancellationToken.None).ConfigureAwait(false);
+
         _disposed = true;
 
         await _sink.DisposeAsync().ConfigureAwait(false);

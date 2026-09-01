@@ -420,6 +420,25 @@ public sealed class RoundTripTests : IDisposable
     }
 
     [Fact]
+    public async Task AMicroFocusFileGetsItsHeaderEvenIfOnlyDisposed()
+    {
+        // No records written and no explicit CompleteAsync: disposing still has
+        // to leave behind a file a Micro Focus runtime would accept, rather than
+        // an empty one.
+        var path = NewPath();
+
+        await using (var writer = RecordFile.CreateVariableWrite(
+            path, VariableRecordDescriptor.MicroFocus()))
+        {
+        }
+
+        var content = await File.ReadAllBytesAsync(path, Ct);
+
+        Assert.Equal(128, content.Length);
+        Assert.Equal<byte[]>([0x30, 0x7E], content[..2]);
+    }
+
+    [Fact]
     public async Task MicroFocusRecordsTooLongForAShortControlFieldUseTheLongOne()
     {
         var descriptor = VariableRecordDescriptor.MicroFocus(20_000);

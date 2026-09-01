@@ -235,6 +235,105 @@ public sealed class RoundTripTests : IDisposable
             Assert.True(records[i].AsSpan().SequenceEqual(actual[i]), $"record {i} differed");
     }
 
+    // ---- agreement with the reference Fujitsu implementation --------------
+
+    /// <summary>
+    /// Reads a Fujitsu file the way the format is defined: a four-byte
+    /// little-endian length, the record, then the same length again.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately written with <see cref="BinaryReader"/> and no reference to
+    /// PunchIO's own framing, so agreement between the two is evidence about the
+    /// file format rather than PunchIO agreeing with itself.
+    /// </remarks>
+    private static List<byte[]> ReadFujitsuDirectly(string path)
+    {
+        var records = new List<byte[]>();
+
+        using var stream = File.OpenRead(path);
+        using var reader = new BinaryReader(stream);
+
+        while (stream.Position < stream.Length)
+        {
+            uint recordLength = reader.ReadUInt32();
+            byte[] data = reader.ReadBytes((int)recordLength);
+            uint suffixLength = reader.ReadUInt32();
+
+            Assert.Equal(recordLength, suffixLength);
+            Assert.Equal((int)recordLength, data.Length);
+
+            records.Add(data);
+        }
+
+        return records;
+    }
+
+    private static void WriteFujitsuDirectly(string path, IEnumerable<byte[]> records)
+    {
+        using var stream = File.Create(path);
+        using var writer = new BinaryWriter(stream);
+
+        foreach (var record in records)
+        {
+            writer.Write((uint)record.Length);
+            writer.Write(record);
+            writer.Write((uint)record.Length);
+        }
+    }
+
+    [Fact]
+    public async Task WhatPunchIoWritesTheReferenceAlgorithmCanRead()
+    {
+        var records = RandomRecords(seed: 211, count: 500, minLength: 0, maxLength: 300);
+        var path = NewPath();
+
+        await WriteAsync(
+            path, new VariableRecordEncoder(VariableRecordDescriptor.Fujitsu),
+            records, blockSize: 4096, queueDepth: 4);
+
+        var actual = ReadFujitsuDirectly(path);
+
+        Assert.Equal(records.Count, actual.Count);
+
+        for (int i = 0; i < records.Count; i++)
+            Assert.True(records[i].AsSpan().SequenceEqual(actual[i]), $"record {i} differed");
+    }
+
+    [Fact]
+    public async Task WhatTheReferenceAlgorithmWritesPunchIoCanRead()
+    {
+        var records = RandomRecords(seed: 227, count: 500, minLength: 0, maxLength: 300);
+        var path = NewPath();
+
+        WriteFujitsuDirectly(path, records);
+
+        var actual = await ReadAsync(
+            path, new VariableRecordFramer(VariableRecordDescriptor.Fujitsu),
+            blockSize: 4096, queueDepth: 4);
+
+        Assert.Equal(records.Count, actual.Count);
+
+        for (int i = 0; i < records.Count; i++)
+            Assert.True(records[i].AsSpan().SequenceEqual(actual[i]), $"record {i} differed");
+    }
+
+    [Fact]
+    public async Task AFujitsuRecordOccupiesItsLengthPlusEightBytes()
+    {
+        var path = NewPath();
+
+        await WriteAsync(
+            path, new VariableRecordEncoder(VariableRecordDescriptor.Fujitsu),
+            [new byte[100]], blockSize: 4096, queueDepth: 2);
+
+        Assert.Equal(108, new FileInfo(path).Length);
+
+        // The length really is little-endian: 100 is 0x64 in the first byte.
+        var bytes = await File.ReadAllBytesAsync(path, Ct);
+        Assert.Equal<byte[]>([0x64, 0x00, 0x00, 0x00], bytes[..4]);
+        Assert.Equal<byte[]>([0x64, 0x00, 0x00, 0x00], bytes[^4..]);
+    }
+
     // ---- the unbuffered backend, end to end ------------------------------
 
     private void RequireUnbufferedBackend()

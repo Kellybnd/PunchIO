@@ -106,6 +106,10 @@ public readonly record struct VariableRecordDescriptor
     /// caller-visible data length, excluding the eight framing bytes, so a record
     /// of <c>n</c> data bytes occupies <c>n + 8</c> bytes on disk and reports <c>n</c>.
     /// </summary>
+    /// <remarks>
+    /// The length is little-endian: the runtime reads and writes it as a native
+    /// x86 word with no byte swapping, so the on-disk order is the machine's.
+    /// </remarks>
     public static VariableRecordDescriptor Fujitsu => new()
     {
         PrefixBytes = 4,
@@ -113,7 +117,7 @@ public readonly record struct VariableRecordDescriptor
         LengthFieldOffset = 0,
         LengthFieldWidth = 4,
         FlagByteOffset = -1,
-        Endianness = Endianness.BigEndian,
+        Endianness = Endianness.LittleEndian,
         LengthIncludes = LengthBasis.DataOnly,
         ValidateSuffix = true,
         ValidateReservedBytes = false,

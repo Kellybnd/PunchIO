@@ -5,12 +5,12 @@ namespace PunchIO.Core.Tests.Framing;
 
 public class VariableRecordFramerTests
 {
-    /// <summary>A Fujitsu record: four-byte big-endian length, data, the same length again.</summary>
+    /// <summary>A Fujitsu record: four-byte little-endian length, data, the same length again.</summary>
     private static byte[] Fujitsu(params byte[] data) =>
     [
-        0, 0, (byte)(data.Length >> 8), (byte)data.Length,
+        (byte)data.Length, (byte)(data.Length >> 8), 0, 0,
         .. data,
-        0, 0, (byte)(data.Length >> 8), (byte)data.Length,
+        (byte)data.Length, (byte)(data.Length >> 8), 0, 0,
     ];
 
     /// <summary>A Micro Focus record: two-byte big-endian length, flags, reserved, data.</summary>
@@ -122,11 +122,11 @@ public class VariableRecordFramerTests
     }
 
     [Fact]
-    public void ReadsLittleEndianLengthsWhenConfigured()
+    public void ReadsBigEndianLengthsWhenConfigured()
     {
-        var descriptor = VariableRecordDescriptor.Fujitsu with { Endianness = Endianness.LittleEndian };
+        var descriptor = VariableRecordDescriptor.Fujitsu with { Endianness = Endianness.BigEndian };
         var framer = new VariableRecordFramer(descriptor);
-        byte[] input = [5, 0, 0, 0, 1, 2, 3, 4, 5, 5, 0, 0, 0];
+        byte[] input = [0, 0, 0, 5, 1, 2, 3, 4, 5, 0, 0, 0, 5];
 
         var status = framer.TryFrame(input, isFinalBlock: false,
             out int consumed, out _, out int length);
@@ -147,7 +147,7 @@ public class VariableRecordFramerTests
         var framer = new VariableRecordFramer(descriptor);
 
         // Stored length 13 = 4 prefix + 5 data + 4 suffix.
-        byte[] input = [0, 0, 0, 13, 1, 2, 3, 4, 5, 0, 0, 0, 13];
+        byte[] input = [13, 0, 0, 0, 1, 2, 3, 4, 5, 13, 0, 0, 0];
 
         var status = framer.TryFrame(input, isFinalBlock: false,
             out int consumed, out _, out int length);
@@ -167,7 +167,7 @@ public class VariableRecordFramerTests
         };
         var framer = new VariableRecordFramer(descriptor);
 
-        byte[] input = [0, 0, 0, 2, 1, 2, 3, 4, 0, 0, 0, 2];   // 2 - 8 is negative
+        byte[] input = [2, 0, 0, 0, 1, 2, 3, 4, 2, 0, 0, 0];   // 2 - 8 is negative
 
         Assert.Equal(FrameStatus.Invalid,
             framer.TryFrame(input, isFinalBlock: false, out _, out _, out _));

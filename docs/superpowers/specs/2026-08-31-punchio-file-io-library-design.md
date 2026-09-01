@@ -411,13 +411,17 @@ public readonly struct VariableRecordDescriptor
 | | Prefix | Suffix | Length field | Endian | Length basis | Alignment |
 |---|---|---|---|---|---|---|
 | **MicroFocus** | 4 bytes | none | bytes 0-1 (byte 2 flags, byte 3 zero) | big-endian | `DataOnly` | packed |
-| **Fujitsu** | 4 bytes | 4 bytes | full 4 bytes | big-endian | `DataOnly` | packed |
+| **Fujitsu** | 4 bytes | 4 bytes | full 4 bytes | little-endian | `DataOnly` | packed |
 
-**Fujitsu length basis.** The length in both the prefix and the
-suffix is the length of the data returned to the caller. It excludes the 8
-bytes of framing. A record with `n` data bytes occupies `n + 8` bytes on disk
-and reports `n`. When `ValidateSuffix` is on (default for the Fujitsu preset),
-the suffix is compared to the prefix on read as an integrity check.
+**Fujitsu length field.** The length in both the prefix and the suffix is the
+length of the data returned to the caller. It excludes the 8 bytes of framing,
+so a record with `n` data bytes occupies `n + 8` bytes on disk and reports `n`.
+It is stored little-endian: the runtime reads and writes it as a native x86
+word with no byte swapping. When `ValidateSuffix` is on (the default for this
+preset), the suffix is compared to the prefix on read as an integrity check.
+
+This layout is confirmed against a working implementation rather than inferred,
+and the byte order is asserted in the test suite so it cannot drift.
 
 **Prefix bytes outside the length field.** For the Micro Focus preset, prefix
 byte 2 (flags) and byte 3 are not part of the length. On read they are ignored
@@ -819,7 +823,7 @@ implement, and which declaration to change for a variant.
 
 | Layout aspect | Shipped default | Adaptation point |
 |---|---|---|
-| Fujitsu record framing | 4-byte prefix and 4-byte suffix, big-endian, length counts data only | `VariableRecordDescriptor.Fujitsu` |
+| Fujitsu record framing | 4-byte prefix and 4-byte suffix, little-endian, length counts data only | `VariableRecordDescriptor.Fujitsu` |
 | Micro Focus record framing | 4-byte header, big-endian length in bytes 0–1, flags in byte 2 | `VariableRecordDescriptor.MicroFocus` |
 | Length byte order | Big-endian | `Endianness` |
 | What the length counts | Data only | `LengthIncludes` |

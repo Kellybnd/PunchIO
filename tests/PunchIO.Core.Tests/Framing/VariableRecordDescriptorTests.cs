@@ -31,6 +31,12 @@ public class VariableRecordDescriptorTests
         Assert.Equal(4, d.LengthFieldWidth);
         Assert.Equal(-1, d.FlagByteOffset);      // no flag byte
         Assert.True(d.ValidateSuffix);           // free integrity check
+
+        // Little-endian: the runtime reads and writes the length as a native
+        // x86 word with no byte swapping. Confirmed against a working
+        // implementation, so this is a fact about the format rather than a
+        // default, and reversing it would misread every real file.
+        Assert.Equal(Endianness.LittleEndian, d.Endianness);
     }
 
     [Fact]

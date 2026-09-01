@@ -65,17 +65,16 @@ public sealed class VariableFormatProbeTests : IDisposable
     [Fact]
     public void DistinguishesEndiannessWhichIsTheWholePoint()
     {
-        // The open question the probe exists to settle. A little-endian file must
-        // not be explained by the big-endian preset.
-        var littleEndian = VariableRecordDescriptor.Fujitsu with
+        // A big-endian file must not be explained by the little-endian preset.
+        var bigEndian = VariableRecordDescriptor.Fujitsu with
         {
-            Endianness = Endianness.LittleEndian,
+            Endianness = Endianness.BigEndian,
         };
 
-        var best = Best(VariableFormatProbe.Probe(Build(littleEndian)));
+        var best = Best(VariableFormatProbe.Probe(Build(bigEndian)));
 
         Assert.Equal(ProbeConfidence.High, best.Confidence);
-        Assert.Equal(Endianness.LittleEndian, best.Descriptor.Endianness);
+        Assert.Equal(Endianness.BigEndian, best.Descriptor.Endianness);
     }
 
     [Fact]

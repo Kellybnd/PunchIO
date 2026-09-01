@@ -125,11 +125,20 @@ await using var reader = RecordFile.OpenVariableRead("customers.dat", layout);
 |---|---|---|
 | Prefix | 4 bytes | 4 bytes |
 | Suffix | 4 bytes | none |
-| Length field | 4 bytes, big-endian | 2 bytes, big-endian |
+| Length field | 4 bytes, little-endian | 2 bytes, big-endian |
 | Largest record | 4 GiB | 65,535 bytes |
 
-Fujitsu validates the trailing length against the leading one on every read.
-Disable it with `ValidateSuffix = false` if you would rather have the throughput.
+A Fujitsu record on disk is a four-byte little-endian length, the record bytes,
+then the same length again, so `n` bytes of data occupy `n + 8`:
+
+```
+[ length ][ ........ record ........ ][ length ]
+  4 bytes            n bytes            4 bytes
+```
+
+The trailing length is checked against the leading one on every read, which
+catches corruption at record granularity. Disable it with
+`ValidateSuffix = false` if you would rather have the throughput.
 
 ### Relative files
 

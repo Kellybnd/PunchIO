@@ -101,11 +101,11 @@ public static class VariableFormatProbe
     /// </summary>
     public static IReadOnlyList<VariableFormatCandidate> DefaultCandidates { get; } =
     [
-        new("Fujitsu (4-byte prefix and suffix, big-endian, data-only length)",
+        new("Fujitsu (4-byte prefix and suffix, little-endian, data-only length)",
             VariableRecordDescriptor.Fujitsu),
 
-        new("Fujitsu, little-endian",
-            VariableRecordDescriptor.Fujitsu with { Endianness = Endianness.LittleEndian }),
+        new("Fujitsu, big-endian",
+            VariableRecordDescriptor.Fujitsu with { Endianness = Endianness.BigEndian }),
 
         new("Fujitsu, length includes framing",
             VariableRecordDescriptor.Fujitsu with
@@ -113,10 +113,10 @@ public static class VariableFormatProbe
                 LengthIncludes = LengthBasis.WithPrefixAndSuffix,
             }),
 
-        new("Fujitsu, little-endian, length includes framing",
+        new("Fujitsu, big-endian, length includes framing",
             VariableRecordDescriptor.Fujitsu with
             {
-                Endianness = Endianness.LittleEndian,
+                Endianness = Endianness.BigEndian,
                 LengthIncludes = LengthBasis.WithPrefixAndSuffix,
             }),
 

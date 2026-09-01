@@ -165,7 +165,7 @@ public class SequentialWriterTests
             [Ascii("ABC")]);
 
         Assert.Equal<byte[]>(
-            [0, 0, 0, 3, 0x41, 0x42, 0x43, 0, 0, 0, 3],
+            [3, 0, 0, 0, 0x41, 0x42, 0x43, 3, 0, 0, 0],
             content);
     }
 
@@ -198,7 +198,7 @@ public class SequentialWriterTests
 
         // 4 prefix + 3 data + 4 suffix = 11, padded up to 12.
         Assert.Equal(12, content.Length);
-        Assert.Equal<byte[]>([0, 0, 0, 3, 0x41, 0x42, 0x43, 0, 0, 0, 3, 0], content);
+        Assert.Equal<byte[]>([3, 0, 0, 0, 0x41, 0x42, 0x43, 3, 0, 0, 0, 0], content);
     }
 
     // ---- bookkeeping ----------------------------------------------------

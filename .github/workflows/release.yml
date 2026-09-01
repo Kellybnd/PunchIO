@@ -94,11 +94,23 @@ jobs:
       - name: Publish to NuGet
         shell: pwsh
         run: |
-          # Pushing the .nupkg also pushes the matching .snupkg to nuget.org.
-          dotnet nuget push "artifacts/*.nupkg" `
-            --api-key ${{ steps.login.outputs.NUGET_API_KEY }} `
-            --source https://api.nuget.org/v3/index.json `
-            --skip-duplicate
+          # Enumerated rather than passed as a glob: dotnet nuget push does not
+          # expand wildcards, and quoting stops the shell from doing it either.
+          $packages = Get-ChildItem artifacts -Filter *.nupkg
+
+          if ($packages.Count -eq 0) { throw "no packages found in artifacts" }
+
+          foreach ($package in $packages) {
+            Write-Host "pushing $($package.Name)"
+
+            # Pushing the .nupkg also pushes the matching .snupkg to nuget.org.
+            dotnet nuget push $package.FullName `
+              --api-key ${{ steps.login.outputs.NUGET_API_KEY }} `
+              --source https://api.nuget.org/v3/index.json `
+              --skip-duplicate
+
+            if ($LASTEXITCODE -ne 0) { throw "push failed for $($package.Name)" }
+          }
 
       - name: Create GitHub release
         if: github.event_name == 'push'

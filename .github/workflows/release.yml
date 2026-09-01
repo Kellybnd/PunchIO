@@ -67,6 +67,20 @@ jobs:
         shell: pwsh
         run: Get-ChildItem artifacts | Select-Object Name, Length | Format-Table -AutoSize
 
+      # Fails here with a clear message rather than inside the OIDC exchange,
+      # where an empty username surfaces as an opaque authentication error.
+      - name: Check publishing configuration
+        shell: pwsh
+        env:
+          NUGET_USER: ${{ secrets.NUGET_USER }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:NUGET_USER)) {
+            throw "The NUGET_USER repository secret is empty. Set it to your " +
+                  "nuget.org profile name (not your email address)."
+          }
+
+          Write-Host "publishing as nuget.org user '$env:NUGET_USER'"
+
       # Trusted publishing: GitHub issues a signed OIDC token describing this
       # repository and workflow, NuGet checks it against the policy configured on
       # nuget.org, and returns an API key valid for one hour and usable once.

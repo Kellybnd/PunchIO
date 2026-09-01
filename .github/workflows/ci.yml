@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+jobs:
+  build:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # The SDK version comes from global.json so local and CI builds agree.
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      # Needed to run the net8.0 half of the test matrix; the SDK above only
+      # supplies the net10.0 runtime.
+      - name: Install .NET 8 runtime
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build -c Release --no-restore
+
+      # Both configurations: the record-lifetime guard is compiled into Debug
+      # only, and the allocation assertions run in Release only, so neither
+      # configuration alone covers the suite.
+      - name: Test (Release)
+        run: dotnet test -c Release --no-build
+
+      - name: Test (Debug)
+        run: dotnet test -c Debug
+
+      - name: Run samples
+        run: dotnet run -c Release --no-build --project samples/PunchIO.Samples
+
+  package:
+    name: package
+    runs-on: windows-latest
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Pack
+        run: dotnet pack -c Release -o artifacts
+
+      # The most fragile part of the build: NativeAOT compilation plus an MSVC
+      # link. Failing here is worth knowing about before a release tag, not
+      # during one.
+      - name: Publish the native EXFH library
+        run: dotnet publish src/PunchIO.Exfh.Native -c Release -r win-x64 -f net10.0
+
+      - name: Verify EXTFH is exported
+        shell: pwsh
+        run: |
+          $dll = "src/PunchIO.Exfh.Native/bin/Release/net10.0/win-x64/publish/punchio_exfh.dll"
+          if (-not (Test-Path $dll)) { throw "native library was not produced" }
+          $dumpbin = Get-ChildItem "C:\Program Files*\Microsoft Visual Studio\*\*\VC\Tools\MSVC\*\bin\Hostx64\x64\dumpbin.exe" |
+                     Select-Object -First 1
+          $exports = & $dumpbin.FullName /exports $dll
+          if ($exports -notmatch "EXTFH") { throw "EXTFH is not exported" }
+          Write-Host "EXTFH exported from $dll"
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: artifacts/*
+          retention-days: 14

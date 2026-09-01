@@ -9,6 +9,15 @@
   <PropertyGroup Condition="'$(IsPackable)' == 'true'">
     <Product>PunchIO</Product>
 
+    <!-- Strong naming gives the shipped assemblies a stable identity, which some
+         enterprise consumers require of their references. It is not a security
+         measure and the key is not a secret: .NET provides no tamper protection
+         from strong names, so the key is committed like any other build input.
+         Publisher trust comes from Authenticode signing of the package, which is
+         a separate step needing a certificate from a certificate authority. -->
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)punchio.snk</AssemblyOriginatorKeyFile>
+
     <Authors>Kelly Hollis</Authors>
     <Company>Kelly Hollis</Company>
     <!-- No "All Rights Reserved": under MIT most rights are in fact granted,

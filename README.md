@@ -1,5 +1,7 @@
 # PunchIO
 
+[![CI](https://github.com/Kellybnd/PunchIO/actions/workflows/ci.yml/badge.svg)](https://github.com/Kellybnd/PunchIO/actions/workflows/ci.yml)
+[![NuGet](https://img.shields.io/nuget/v/PunchIO.Core.svg)](https://www.nuget.org/packages/PunchIO.Core)
 [![MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE.txt)
 [![.NET](https://img.shields.io/badge/.NET-10.0%20%7C%208.0-512BD4.svg)](https://dotnet.microsoft.com/)
 
@@ -24,7 +26,9 @@ dotnet add package PunchIO.Configuration   # file layouts from IConfiguration
 dotnet add package PunchIO.Cobol           # EXFH entry point for COBOL
 ```
 
-Both `net10.0` and `net8.0` are supported.
+Both `net10.0` and `net8.0` are supported. The assemblies are strong-named with
+public key token `b8f132504d26042a`, for consumers whose own assemblies require
+strong-named references.
 
 ## Getting started
 
@@ -312,6 +316,21 @@ dotnet run -c Release --project bench/PunchIO.Benchmarks -- --filter '*Framing*'
 Publishing the native EXFH library needs `vswhere.exe` on `PATH`
 (`C:\Program Files (x86)\Microsoft Visual Studio\Installer`). Without it the AOT
 compilation succeeds and the linker step fails with an unhelpful error.
+
+### Releasing
+
+Continuous integration builds and tests on Windows and Linux, in Debug and
+Release, and verifies that the native EXFH library still exports `EXTFH`.
+
+Publishing is driven by a tag:
+
+```bash
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+That packs at the tagged version, pushes to NuGet, and opens a GitHub release
+with the packages attached. It needs a `NUGET_API_KEY` repository secret.
 
 ### Layout
 

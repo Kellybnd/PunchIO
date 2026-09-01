@@ -1,0 +1,89 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish, without a leading v (for example 1.0.1)'
+        required: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write        # to create the GitHub release
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Install .NET 8 runtime
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # The tag is the authority on the version. A tag of v1.2.3 publishes
+      # 1.2.3; v1.2.3-rc1 publishes that prerelease.
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        run: |
+          $version = if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
+            '${{ github.event.inputs.version }}'
+          } else {
+            '${{ github.ref_name }}' -replace '^v', ''
+          }
+
+          if ($version -notmatch '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') {
+            throw "'$version' is not a version. Tag releases as v1.2.3 or v1.2.3-rc1."
+          }
+
+          "version=$version" >> $env:GITHUB_OUTPUT
+          Write-Host "publishing $version"
+
+      # Never publish something that does not pass its own tests.
+      - name: Test
+        run: dotnet test -c Release
+
+      - name: Pack
+        run: >
+          dotnet pack -c Release -o artifacts
+          -p:VersionPrefix=${{ steps.version.outputs.version }}
+          -p:VersionSuffix=
+
+      - name: List packages
+        shell: pwsh
+        run: Get-ChildItem artifacts | Select-Object Name, Length | Format-Table -AutoSize
+
+      - name: Publish to NuGet
+        shell: pwsh
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          if (-not $env:NUGET_API_KEY) {
+            throw "The NUGET_API_KEY repository secret is not set."
+          }
+
+          # Pushing the .nupkg also pushes the matching .snupkg to nuget.org.
+          dotnet nuget push "artifacts/*.nupkg" `
+            --api-key $env:NUGET_API_KEY `
+            --source https://api.nuget.org/v3/index.json `
+            --skip-duplicate
+
+      - name: Create GitHub release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: PunchIO ${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          files: artifacts/*

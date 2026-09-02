@@ -320,17 +320,26 @@ header. Section 14 of the [design specification][spec] is the full reference.
 
 ## Performance
 
-Measured on an i9-13900K, .NET 10, against a 312 MB file of 1.5 M records:
+Measured on an i9-13900K with a Samsung 980 PRO NVMe drive, .NET 10, against
+4 GiB files read from a cold cache and written through to disk:
+
+| | |
+|---|---|
+| Variable records, read | 5.8 GB/s: 1.9× a `FileStream` record loop, 1.7× raw `FileStream` block reads |
+| Line sequential, read | 6.6 GB/s: 2.3× `StreamReader.ReadLineAsync`, 3,500× less allocated |
+| Variable records, write | 1.8 GB/s: 1.3× a `FileStream` record loop, 1.2× raw `FileStream` block writes |
+| Line sequential, write | 1.9 GB/s: 1.4× `StreamWriter.WriteLine` |
+
+Per record, with no I/O involved:
 
 | | |
 |---|---|
 | Framing per record | 0.38 ns fixed length, 4–9 ns other formats |
 | Allocation per record | 0.06–1.47 bytes |
-| Line sequential vs `StreamReader.ReadLineAsync` | 12.2× faster, 2,770× less allocated |
-| Variable records vs a raw `FileStream` loop | within 1.5×, while framing 1.5 M records |
 
-The [performance report][perf] has the full results, methodology and test
-conditions. Per-record allocation is asserted by the test suite.
+The [large-file report][perf-large] has the throughput results, methodology
+and test conditions; the [baseline report][perf] has the framing and
+allocation figures. Per-record allocation is asserted by the test suite.
 
 ## Building
 
@@ -343,8 +352,20 @@ dotnet run -c Release --project samples/PunchIO.Samples
 Benchmarks:
 
 ```bash
+# Per-record framing cost with no I/O; runs in seconds
 dotnet run -c Release --project bench/PunchIO.Benchmarks -- --filter '*Framing*'
+
+# PunchIO against FileStream, StreamReader and StreamWriter on 4 GiB files
+dotnet run -c Release --project bench/PunchIO.Benchmarks -- --filter '*Comparison*'
+
+# Queue depth x block size x backend sweeps on 4 GiB files
+dotnet run -c Release --project bench/PunchIO.Benchmarks -- --filter '*SequentialReadBenchmarks*' '*SequentialWriteBenchmarks*'
 ```
+
+The I/O benchmarks generate two 4 GiB data files under the temp directory on
+first use, evict them from the operating system's cache before every pass, and
+flush every write to disk before stopping the clock. Set `PUNCHIO_BENCH_SIZE_MIB`
+to change the file size.
 
 Publishing the native EXFH library needs `vswhere.exe` on `PATH`
 (`C:\Program Files (x86)\Microsoft Visual Studio\Installer`). Without it the AOT
@@ -377,3 +398,4 @@ appear only to describe the formats and interfaces it supports.
 
 [spec]: docs/superpowers/specs/2026-08-31-punchio-file-io-library-design.md
 [perf]: docs/superpowers/benchmarks/2026-09-01-baseline-results.md
+[perf-large]: docs/superpowers/benchmarks/2026-09-01-large-file-results.md

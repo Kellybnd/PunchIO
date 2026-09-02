@@ -3,6 +3,11 @@
 **Version:** 1.0.0
 **Date:** 2026-09-01
 
+> Sections 3 and 4 of this report measure a 312 MB file served from the file
+> system cache, as the scope note in section 6 explains. Device throughput on
+> multi-gigabyte files read from a cold cache, and writes measured to disk, are
+> in the [large-file report](2026-09-01-large-file-results.md).
+
 ## Test environment
 
 | | |
@@ -162,9 +167,9 @@ Stated so the numbers are read for what they are:
 
 - **Working set.** The 312 MB data set is cache-resident on a 128 GB machine, so
   sections 3 and 4 measure pipeline and CPU cost rather than device throughput.
-  Characterising behaviour against a working set larger than memory requires a
-  data set sized to the target machine; `BenchmarkFile.RecordCount` controls
-  this.
+  Device throughput on 4 GiB files read from a cold cache and written through
+  to disk is measured in the [large-file report](2026-09-01-large-file-results.md);
+  `PUNCHIO_BENCH_SIZE_MIB` sets the data set size.
 - **Storage.** Measurements are from a local NTFS volume with a 512-byte logical
   sector. Network shares and 4Kn volumes are supported and exercised by the test
   suite, but are not represented in these timings.

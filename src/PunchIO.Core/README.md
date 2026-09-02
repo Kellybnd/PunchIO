@@ -23,13 +23,15 @@ await foreach (var record in reader.ReadAllAsync(cancellationToken))
 
 ## Measured
 
-On an i9-13900K, .NET 10, against a 312 MB file:
+On an i9-13900K with a Samsung 980 PRO NVMe drive, .NET 10:
 
 | | Result |
 |---|---|
+| Sequential read, 4 GiB file, cold cache | **5.8 GB/s: 1.9x a `FileStream` record loop** |
+| Line sequential read vs `StreamReader.ReadLineAsync` | **2.3x faster, 3,500x less allocated** |
+| Sequential write, 4 GiB file, flushed to disk | **1.8 GB/s: 1.3x a `FileStream` record loop** |
 | Framing cost per record | 0.38 ns fixed block, 4–9 ns for the other formats |
 | Allocation per record | 0.06–1.47 bytes; asserted in the test suite |
-| Line sequential vs `StreamReader.ReadLineAsync` | **12.2x faster, 2,770x less allocated** |
 
 Full results, including what has *not* been measured, are in
 `docs/superpowers/benchmarks/`.
